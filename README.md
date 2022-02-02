@@ -1,11 +1,13 @@
 # Winget-Install
-Powershell scripts to install Winget Packages with SCCM/Intune or other tools and even standalone.
+Powershell scripts to install Winget Packages with SCCM/Intune or other tools and even standalone (inspired by [o-l-a-v](https://github.com/o-l-a-v) work)
 
 ## Install
 ### SCCM
 - Create an application and put the "winget-install.ps1" script as sources
 - For install command, put this command line:
 >powershell.exe -ExecutionPolicy bypass -File winget-install.ps1 -AppIDs Notepad++.Notepad++
+
+![image](https://user-images.githubusercontent.com/96626929/152222570-da527307-ecc9-4fc2-b83e-7891ffae36ee.png)
 
 ### Intune
 - Create Intunewin with the "winget-install.ps1" script
@@ -20,6 +22,14 @@ Powershell scripts to install Winget Packages with SCCM/Intune or other tools an
 
 ## Updates
 https://github.com/Romanitho/Winget-autoupdate
+
+## Uninstall
+- To uninstall an app, you can use:
+>powershell.exe -ExecutionPolicy bypass -File winget-install.ps1 -AppIDs Notepad++.Notepad++ -Uninstall
+
+but most of the time, winget does not manage silent uninstall correcty.
+- I would suggest to use the original application uninstaller method, something like this:
+>‪C:\Program Files\Notepad++\uninstall.exe /S
 
 ## Other ideas and approaches
 https://github.com/o-l-a-v/winget-intune-win32
