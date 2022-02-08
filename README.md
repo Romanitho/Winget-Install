@@ -15,6 +15,10 @@ Powershell scripts to install Winget Packages with SCCM/Intune or other tools an
 - Put this command line as Install Cmd
 >powershell.exe -ExecutionPolicy bypass -File winget-install.ps1 -AppIDs Notepad++.Notepad++
 
+### Multiple apps at once
+- Run this command
+> powershell -Executionpolicy Bypass -Command .\winget-install.ps1 -AppIDs 7zip.7zip,Notepad++.Notepad++
+
 ## Detection method
 - Use the "winget-detect.ps1" with SCCM or Intune as detection method.
 - Replace "$AppToDetect" value by your App ID
