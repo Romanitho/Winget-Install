@@ -11,7 +11,7 @@ Powershell scripts to install Winget Packages with SCCM/Intune (or similar) or e
 
 ### Intune
 - Create Intunewin with the "winget-install.ps1" script
-- Create an Win32 application in Intune
+- Create a Win32 application in Intune
 - Put this command line as Install Cmd
 >powershell.exe -ExecutionPolicy Bypass -File winget-install.ps1 -AppIDs Notepad++.Notepad++
 
