@@ -4,6 +4,7 @@ Install apps with Winget through Intune or SCCM
 
 .DESCRIPTION
 Allow to run Winget in System Context to install your apps.
+https://github.com/Romanitho/Winget-Install
 
 .PARAMETER AppIDs
 Forward Winget App ID to install. For multiple apps, separate with ","
@@ -159,6 +160,12 @@ function Uninstall-App ($AppID){
 
 
 <# MAIN #>
+
+Write-host "###################################"
+Write-host "#                                 #"
+Write-host "#         Winget Install          #"
+Write-host "#                                 #"
+Write-host "###################################`n"
 
 #Run Init Function
 Init
