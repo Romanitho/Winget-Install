@@ -29,7 +29,7 @@ Used to specify logpath. Default is same folder as Winget-Autoupdate project
 param(
     [Parameter(Mandatory=$True,ParameterSetName="AppIDs")] [String[]] $AppIDs,
     [Parameter(Mandatory=$False)] [Switch] $Uninstall,
-    [Parameter(Mandatory=$False)] [String] $LogPath = "$env:ProgramData\winget-update\logs"
+    [Parameter(Mandatory=$False)] [String] $LogPath = "$env:ProgramData\Winget-Install\logs"
 )
 
 
