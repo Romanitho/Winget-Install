@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
 Install apps with Winget through Intune or SCCM
 
@@ -87,7 +87,7 @@ function Get-WingetCmd {
 }
 
 #Check if app is installed
-function Check-Install ($AppID){
+function Confirm-Install ($AppID){
     #Get "Winget List AppID"
     $InstalledApp = & $winget list --Id $AppID --accept-source-agreements | Out-String
 
@@ -101,7 +101,7 @@ function Check-Install ($AppID){
 }
 
 #Check if App exists in Winget Repository
-function Check-Exist ($AppID){
+function Confirm-Exist ($AppID){
     #Check is app exists in the winget repository
     $WingetApp = & $winget show --Id $AppID --accept-source-agreements | Out-String
 
@@ -118,13 +118,13 @@ function Check-Exist ($AppID){
 
 #Install function
 function Install-App ($AppID){
-    $IsInstalled = Check-Install $AppID
+    $IsInstalled = Confirm-Install $AppID
     if (!($IsInstalled)){
         #Install App
         Write-Log "Installing $AppID..." "Yellow"
         & $winget install --id $AppID --silent --accept-package-agreements --accept-source-agreements
         #Check if install is ok
-        $IsInstalled = Check-Install $AppID
+        $IsInstalled = Confirm-Install $AppID
         if ($IsInstalled){
             Write-Log "$AppID successfully installed." "Green"
         }
@@ -139,13 +139,13 @@ function Install-App ($AppID){
 
 #Uninstall function
 function Uninstall-App ($AppID){
-    $IsInstalled = Check-Install $AppID
+    $IsInstalled = Confirm-Install $AppID
     if ($IsInstalled){
         #Install App
         Write-Log "Uninstalling $AppID..." "Yellow"
         & $winget uninstall --id $AppID --silent --accept-source-agreements
         #Check if install is ok
-        $IsInstalled = Check-Install $AppID
+        $IsInstalled = Confirm-Install $AppID
         if (!($IsInstalled)){
             Write-Log "$AppID successfully uninstalled." "Green"
         }
@@ -175,7 +175,7 @@ Get-WingetCmd
 
 #Run install or uninstall for all apps
 foreach ($AppID in $AppIDs){
-    $Exists = Check-Exist $AppID
+    $Exists = Confirm-Exist $AppID
     if ($Exists){
         #Install or Uninstall command
         if ($Uninstall){
