@@ -1,6 +1,7 @@
 <#
 .SYNOPSIS
-Install apps with Winget through Intune or SCCM
+Install apps with Winget through Intune or SCCM.
+Can be used standalone.
 
 .DESCRIPTION
 Allow to run Winget in System Context to install your apps.
