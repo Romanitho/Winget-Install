@@ -45,7 +45,7 @@ function Init {
 
     #Log file
     $Script:LogFile = "$LogPath\install.log"
-    Write-Log "Log path is: $LogPath\install.log"
+    Write-Log "Log path is: $LogFile"
 
     #Log Header
     if ($Uninstall){
