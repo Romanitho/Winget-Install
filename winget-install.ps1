@@ -40,23 +40,24 @@ param(
 function Init {
     #Logs initialisation
     if (!(Test-Path $LogPath)){
-        New-Item -ItemType Directory -Force -Path $LogPath
+        New-Item -ItemType Directory -Force -Path $LogPath | Out-Null
     }
 
     #Log file
+    Write-Log "Log path is: $LogPath\install.log"
     $Script:LogFile = "$LogPath\install.log"
 
     #Log Header
     if ($Uninstall){
-        Write-Log "###   $(Get-Date -Format 'dd/MM/yyyy') - NEW UNINSTALL REQUEST   ###" "Cyan"
+        Write-Log "###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW UNINSTALL REQUEST   ###" "Magenta"
     }
     else{
-        Write-Log "###   $(Get-Date -Format 'dd/MM/yyyy') - NEW INSTALL REQUEST   ###" "Cyan"
+        Write-Log "###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW INSTALL REQUEST   ###" "Magenta"
     }
 }
 
 #Log Function
-function Write-Log ($LogMsg,$LogColor = "White") {
+function Write-Log ($LogMsg, $LogColor = "White") {
     #Get log
     $Log = "$(Get-Date -UFormat "%T") - $LogMsg"
     #Echo log
@@ -162,11 +163,13 @@ function Uninstall-App ($AppID){
 
 <# MAIN #>
 
-Write-host "###################################"
-Write-host "#                                 #"
-Write-host "#         Winget Install          #"
-Write-host "#                                 #"
-Write-host "###################################`n"
+Write-host "`n"
+Write-host "`t###################################"
+Write-host "`t#                                 #"
+Write-host "`t#         Winget Install          #"
+Write-host "`t#                                 #"
+Write-host "`t###################################"
+Write-Host "`n"
 
 #Run Init Function
 Init
@@ -176,6 +179,7 @@ Get-WingetCmd
 
 #Run install or uninstall for all apps
 foreach ($AppID in $AppIDs){
+    #Check if app exists
     $Exists = Confirm-Exist $AppID
     if ($Exists){
         #Install or Uninstall command
@@ -186,4 +190,5 @@ foreach ($AppID in $AppIDs){
             Install-App $AppID
         }
     }
+    Start-Sleep 3
 }
