@@ -16,6 +16,10 @@ To uninstall app. Works with AppIDs
 .PARAMETER LogPath
 Used to specify logpath. Default is same folder as Winget-Autoupdate project
 
+.PARAMETER WAUWhiteList
+Adds the app to the Winget-AutoUpdate White List. More info: https://github.com/Romanitho/Winget-AutoUpdate
+If '-Uninstall' is used, it removes the app from WAU White List.
+
 .EXAMPLE
 .\winget-install.ps1 -AppIDs 7zip.7zip
 
@@ -30,7 +34,8 @@ Used to specify logpath. Default is same folder as Winget-Autoupdate project
 param(
     [Parameter(Mandatory=$True,ParameterSetName="AppIDs")] [String[]] $AppIDs,
     [Parameter(Mandatory=$False)] [Switch] $Uninstall,
-    [Parameter(Mandatory=$False)] [String] $LogPath = "$env:ProgramData\Winget-Install\logs"
+    [Parameter(Mandatory=$False)] [String] $LogPath = "$env:ProgramData\Winget-AutoUpdate\logs",
+    [Parameter(Mandatory=$False)] [Switch] $WAUWhiteList
 )
 
 
@@ -45,7 +50,7 @@ function Init {
 
     #Log file
     $Script:LogFile = "$LogPath\install.log"
-    Write-Log "Log path is: $LogFile"
+    Write-Host "Log path is: $LogFile"
 
     #Log Header
     if ($Uninstall){
@@ -160,6 +165,31 @@ function Uninstall-App ($AppID){
     }
 }
 
+#Function to Add app to WAU white list
+function Add-WAUWhiteList ($AppID){
+    #Check if WAU default intall path exists
+    $WhiteList = "$env:ProgramData\Winget-AutoUpdate\included_apps.txt"
+    if (Test-Path $WhiteList){
+        Write-Log "Add $AppID to WAU included_apps.txt"
+        #Add App to "included_apps.txt"
+        Add-Content -path $WhiteList -Value "`n$AppID" -Force
+        #Remove duplicate and blank lines
+        $file = Get-Content $WhiteList | Select-Object -Unique | Where-Object {$_.trim() -ne ""} | Sort-Object
+        $file | Out-File $WhiteList
+    }
+}
+
+#Function to Remove app from WAU white list
+function Remove-WAUWhiteList ($AppID){
+    #Check if WAU default intall path exists
+    $WhiteList = "$env:ProgramData\Winget-AutoUpdate\included_apps.txt"
+    if (Test-Path $WhiteList){
+        Write-Log "Remove $AppID to WAU included_apps.txt"
+        #Remove app from list
+        $file = Get-Content $WhiteList | Where-Object {$_ -notmatch "$AppID"}
+        $file | Out-File $WhiteList
+    }
+}
 
 <# MAIN #>
 
@@ -185,9 +215,17 @@ foreach ($AppID in $AppIDs){
         #Install or Uninstall command
         if ($Uninstall){
             Uninstall-App $AppID
+            #Add to WAU White List if set
+            if ($WAUWhiteList){
+                Remove-WAUWhiteList $AppID
+            }
         }
         else{
             Install-App $AppID
+            #Remove from WAU White List if set
+            if ($WAUWhiteList){
+                Add-WAUWhiteList $AppID
+            }
         }
     }
     Start-Sleep 3
