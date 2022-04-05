@@ -27,6 +27,9 @@ If '-Uninstall' is used, it removes the app from WAU White List.
 .\winget-install.ps1 -AppIDs 7zip.7zip -Uninstall
 
 .EXAMPLE
+.\winget-install.ps1 -AppIDs 7zip.7zip -WAUWhiteList
+
+.EXAMPLE
 .\winget-install.ps1 -AppIDs 7zip.7zip,notepad++.notepad++ -LogPath "C:\temp\logs"
 #>
 
