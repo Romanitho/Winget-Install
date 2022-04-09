@@ -241,7 +241,7 @@ Get-WingetCmd
 
 #Run install or uninstall for all apps
 foreach ($AppID in $AppIDs){
-    #Check if app exists
+    #Check if app exists on Winget Repo
     $Exists = Confirm-Exist $AppID
     if ($Exists){
         #Install or Uninstall command
