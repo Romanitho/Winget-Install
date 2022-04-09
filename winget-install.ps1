@@ -132,6 +132,17 @@ function Confirm-Exist ($AppID){
     }
 }
 
+#Check if modifications exist in "mods" directory
+function Test-Mods ($AppID){
+    if (Test-Path -Path "$PSScriptRoot\mods\$AppID-install.ps1" -PathType Leaf){
+        $Script:ModsInstall = "$PSScriptRoot\mods\$AppID-install.ps1"
+    }
+    if (Test-Path -Path "$PSScriptRoot\mods\$AppID-uninstall.ps1" -PathType Leaf){
+        $Script:ModsUninstall = "$PSScriptRoot\mods\$AppID-uninstall.ps1"
+    }
+    return $ModsInstall,$ModsUninstall
+}
+
 #Install function
 function Install-App ($AppID){
     $IsInstalled = Confirm-Install $AppID
@@ -139,6 +150,12 @@ function Install-App ($AppID){
         #Install App
         Write-Log "Installing $AppID..." "Yellow"
         & $winget install --id $AppID --silent --accept-package-agreements --accept-source-agreements
+        #Check if mods exist
+        Test-Mods $AppID
+        if ($ModsInstall){
+            Write-Log "Modifications for $AppID during install are being applied..." "Yellow"
+            & "$ModsInstall"
+        }
         #Check if install is ok
         $IsInstalled = Confirm-Install $AppID
         if ($IsInstalled){
@@ -160,6 +177,12 @@ function Uninstall-App ($AppID){
         #Install App
         Write-Log "Uninstalling $AppID..." "Yellow"
         & $winget uninstall --id $AppID --silent --accept-source-agreements
+        #Check if mods exist
+        Test-Mods $AppID
+        if ($ModsUninstall){
+            Write-Log "Modifications for $AppID during uninstall are being applied..." "Yellow"
+            & "$ModsUninstall"
+        }
         #Check if install is ok
         $IsInstalled = Confirm-Install $AppID
         if (!($IsInstalled)){
