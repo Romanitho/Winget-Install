@@ -38,7 +38,8 @@ param(
     [Parameter(Mandatory=$True,ParameterSetName="AppIDs")] [String[]] $AppIDs,
     [Parameter(Mandatory=$False)] [Switch] $Uninstall,
     [Parameter(Mandatory=$False)] [String] $LogPath = "$env:ProgramData\Winget-AutoUpdate\logs",
-    [Parameter(Mandatory=$False)] [Switch] $WAUWhiteList
+    [Parameter(Mandatory=$False)] [Switch] $WAUWhiteList,
+    [Parameter(Mandatory=$False)] [Switch] $Mods
 )
 
 
@@ -161,10 +162,12 @@ function Install-App ($AppID){
         Write-Log "Installing $AppID..." "Yellow"
         & $winget install --id $AppID --silent --accept-package-agreements --accept-source-agreements
         #Check if mods exist
-        $ModsInstall = Test-ModsInstall $AppID
-        if ($ModsInstall){
-            Write-Log "Modifications for $AppID during install are being applied..." "Yellow"
-            & "$ModsInstall"
+        if ($Mods){
+            $ModsInstall = Test-ModsInstall $AppID
+            if ($ModsInstall){
+                Write-Log "Modifications for $AppID during install are being applied..." "Yellow"
+                & "$ModsInstall"
+            }
         }
         #Check if install is ok
         $IsInstalled = Confirm-Install $AppID
@@ -188,10 +191,12 @@ function Uninstall-App ($AppID){
         Write-Log "Uninstalling $AppID..." "Yellow"
         & $winget uninstall --id $AppID --silent --accept-source-agreements
         #Check if mods exist
-        $ModsUninstall = Test-ModsUninstall $AppID
-        if ($ModsUninstall){
-            Write-Log "Modifications for $AppID during uninstall are being applied..." "Yellow"
-            & "$ModsUninstall"
+        if ($Mods){
+            $ModsUninstall = Test-ModsUninstall $AppID
+            if ($ModsUninstall){
+                Write-Log "Modifications for $AppID during uninstall are being applied..." "Yellow"
+                & "$ModsUninstall"
+            }
         }
         #Check if install is ok
         $IsInstalled = Confirm-Install $AppID
