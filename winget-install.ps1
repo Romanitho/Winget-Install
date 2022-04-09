@@ -38,8 +38,7 @@ param(
     [Parameter(Mandatory=$True,ParameterSetName="AppIDs")] [String[]] $AppIDs,
     [Parameter(Mandatory=$False)] [Switch] $Uninstall,
     [Parameter(Mandatory=$False)] [String] $LogPath = "$env:ProgramData\Winget-AutoUpdate\logs",
-    [Parameter(Mandatory=$False)] [Switch] $WAUWhiteList,
-    [Parameter(Mandatory=$False)] [Switch] $Mods
+    [Parameter(Mandatory=$False)] [Switch] $WAUWhiteList
 )
 
 
@@ -162,12 +161,11 @@ function Install-App ($AppID){
         Write-Log "Installing $AppID..." "Yellow"
         & $winget install --id $AppID --silent --accept-package-agreements --accept-source-agreements
         #Check if mods exist
-        if ($Mods){
-            $ModsInstall = Test-ModsInstall $AppID
-            if ($ModsInstall){
-                Write-Log "Modifications for $AppID during install are being applied..." "Yellow"
-                & "$ModsInstall"
-            }
+        $ModsInstall = Test-ModsInstall $AppID
+        if ($ModsInstall){
+            Write-Log "Modifications for $AppID during install are being applied..." "Yellow"
+            & "$ModsInstall"
+            Add-Mods $AppID
         }
         #Check if install is ok
         $IsInstalled = Confirm-Install $AppID
@@ -191,12 +189,11 @@ function Uninstall-App ($AppID){
         Write-Log "Uninstalling $AppID..." "Yellow"
         & $winget uninstall --id $AppID --silent --accept-source-agreements
         #Check if mods exist
-        if ($Mods){
-            $ModsUninstall = Test-ModsUninstall $AppID
-            if ($ModsUninstall){
-                Write-Log "Modifications for $AppID during uninstall are being applied..." "Yellow"
-                & "$ModsUninstall"
-            }
+        $ModsUninstall = Test-ModsUninstall $AppID
+        if ($ModsUninstall){
+            Write-Log "Modifications for $AppID during uninstall are being applied..." "Yellow"
+            & "$ModsUninstall"
+            Remove-Mods $AppID
         }
         #Check if install is ok
         $IsInstalled = Confirm-Install $AppID
@@ -235,6 +232,26 @@ function Remove-WAUWhiteList ($AppID){
         #Remove app from list
         $file = Get-Content $WhiteList | Where-Object {$_ -notmatch "$AppID"}
         $file | Out-File $WhiteList
+    }
+}
+
+#Function to Add Mods to WAU "mods"
+function Add-Mods ($AppID){
+    #Check if WAU default intall path exists
+    $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
+    if (Test-Path $Mods){
+        Write-Log "Add $AppID-modifications to WAU 'mods'"
+        #Add mods
+    }
+}
+
+#Function to Remove Mods from WAU "mods"
+function Remove-Mods ($AppID){
+    #Check if WAU default intall path exists
+    $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
+    if (Test-Path $Mods){
+        Write-Log "Remove $AppID-modifications from WAU 'mods'"
+        #Remove mods
     }
 }
 
