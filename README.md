@@ -35,5 +35,8 @@ but most of the time, winget does not manage silent uninstall correcty.
 - I would suggest to use the original application uninstaller method, something like this:
 >‪C:\Program Files\Notepad++\uninstall.exe /S
 
+## Custom
+See Mods folder
+
 ## Other ideas and approaches
 https://github.com/o-l-a-v/winget-intune-win32
