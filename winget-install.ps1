@@ -170,6 +170,9 @@ function Install-App ($AppID){
         $IsInstalled = Confirm-Install $AppID
         if ($IsInstalled){
             Write-Log "$AppID successfully installed." "Green"
+            if ($ModsInstall){
+                Add-WAUMods $ModsInstall
+            }
         }
         else{
             Write-Log "$AppID installation failed!" "Red"
@@ -184,7 +187,7 @@ function Install-App ($AppID){
 function Uninstall-App ($AppID){
     $IsInstalled = Confirm-Install $AppID
     if ($IsInstalled){
-        #Install App
+        #Uninstall App
         Write-Log "Uninstalling $AppID..." "Yellow"
         & $winget uninstall --id $AppID --silent --accept-source-agreements
         #Check if mods exist
@@ -193,10 +196,11 @@ function Uninstall-App ($AppID){
             Write-Log "Modifications for $AppID during uninstall are being applied..." "Yellow"
             & "$ModsUninstall"
         }
-        #Check if install is ok
+        #Check if uninstall is ok
         $IsInstalled = Confirm-Install $AppID
         if (!($IsInstalled)){
             Write-Log "$AppID successfully uninstalled." "Green"
+            Remove-WAUMods $AppID
         }
         else{
             Write-Log "$AppID uninstall failed!" "Red"
@@ -230,6 +234,31 @@ function Remove-WAUWhiteList ($AppID){
         #Remove app from list
         $file = Get-Content $WhiteList | Where-Object {$_ -notmatch "$AppID"}
         $file | Out-File $WhiteList
+    }
+}
+
+#Function to Add Mods to WAU "mods"
+function Add-WAUMods ($ModsInstall){
+    #Check if WAU default intall path exists
+    $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
+    if (Test-Path $Mods){
+        Write-Log "Add $ModsInstall to WAU 'mods'"
+        #Add mods
+        Copy-Item "$ModsInstall" -Destination "$Mods" -Force
+    }
+}
+
+#Function to Remove Mods from WAU "mods"
+function Remove-WAUMods ($AppID){
+    #Check if WAU default intall path exists
+    $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
+    if (Test-Path $Mods){
+        if (Test-Path $Mods"\$AppID*"){
+            Write-Log "Remove $AppID-modifications from WAU 'mods'"
+            #Remove mods
+            Remove-Item -Path $Mods"\$AppID*" -Force
+        }
+
     }
 }
 
