@@ -8,6 +8,6 @@ Just put the script with the App ID followed by the "-install" or "-uninstall" s
 and put this in the Mods directory  
 > Example:  
 > If you want to run a script just after uninstalling FileZilla, call your script like this:
-> `TimKosse.FileZilla.Client-uinstall.ps1`
+> `TimKosse.FileZilla.Client-uninstall.ps1`
 
 In the case of FileZilla it spawns a process "Un_A.exe" (NullSoft) as a graphical uninstallation and this we will have to wait for completion of before moving on to checking if the uninstallation suceeded or not.
