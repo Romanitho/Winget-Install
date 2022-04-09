@@ -161,7 +161,7 @@ function Install-App ($AppID){
         Write-Log "Installing $AppID..." "Yellow"
         & $winget install --id $AppID --silent --accept-package-agreements --accept-source-agreements
         #Check if mods exist
-        Test-ModsInstall $AppID
+        $ModsInstall = Test-ModsInstall $AppID
         if ($ModsInstall){
             Write-Log "Modifications for $AppID during install are being applied..." "Yellow"
             & "$ModsInstall"
@@ -188,7 +188,7 @@ function Uninstall-App ($AppID){
         Write-Log "Uninstalling $AppID..." "Yellow"
         & $winget uninstall --id $AppID --silent --accept-source-agreements
         #Check if mods exist
-        Test-ModsUninstall $AppID
+        $ModsUninstall = Test-ModsUninstall $AppID
         if ($ModsUninstall){
             Write-Log "Modifications for $AppID during uninstall are being applied..." "Yellow"
             & "$ModsUninstall"
