@@ -252,13 +252,10 @@ function Add-WAUMods ($ModsInstall){
 function Remove-WAUMods ($AppID){
     #Check if WAU default intall path exists
     $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
-    if (Test-Path $Mods){
-        if (Test-Path $Mods"\$AppID*"){
-            Write-Log "Remove $AppID-modifications from WAU 'mods'"
-            #Remove mods
-            Remove-Item -Path $Mods"\$AppID*" -Force
-        }
-
+    if (Test-Path $Mods"\$AppID*"){
+        Write-Log "Remove $AppID-modifications from WAU 'mods'"
+        #Remove mods
+        Remove-Item -Path $Mods"\$AppID*" -Force
     }
 }
 
