@@ -296,8 +296,8 @@ foreach ($AppID in $AppIDs){
             }
         }
     }
-    Start-Sleep 3
+    Start-Sleep 2
 }
 
 Write-Log "###   END REQUEST   ###" "Magenta"
-Start-Sleep 3
+Start-Sleep 2
