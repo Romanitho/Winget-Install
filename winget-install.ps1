@@ -154,12 +154,14 @@ function Test-ModsUninstall ($AppID){
 }
 
 #Install function
-function Install-App ($AppID){
+function Install-App ($AppID,$AppArgs){
     $IsInstalled = Confirm-Install $AppID
     if (!($IsInstalled)){
         #Install App
         Write-Log "Installing $AppID..." "Yellow"
-        & $winget install --id $AppID --silent --accept-package-agreements --accept-source-agreements
+        $Command = "$winget install --id $AppID --silent --accept-package-agreements --accept-source-agreements $AppArgs"
+        cmd.exe /c $Command
+        
         #Check if mods exist
         $ModsInstall = Test-ModsInstall $AppID
         if ($ModsInstall){
@@ -184,12 +186,14 @@ function Install-App ($AppID){
 }
 
 #Uninstall function
-function Uninstall-App ($AppID){
+function Uninstall-App ($AppID,$AppArgs){
     $IsInstalled = Confirm-Install $AppID
     if ($IsInstalled){
         #Uninstall App
         Write-Log "Uninstalling $AppID..." "Yellow"
-        & $winget uninstall --id $AppID --silent --accept-source-agreements
+        $Command = "$winget uninstall --id $AppID --silent --accept-source-agreements $AppArgs"
+        cmd.exe /c $Command
+
         #Check if mods exist
         $ModsUninstall = Test-ModsUninstall $AppID
         if ($ModsUninstall){
@@ -276,20 +280,23 @@ Init
 Get-WingetCmd
 
 #Run install or uninstall for all apps
-foreach ($AppID in $AppIDs){
+foreach ($App_Full in $AppIDs){
+    #Split AppID and Custom arguments
+    $AppID, $AppArgs = ($App_Full.Trim().Split(" ",2))
+
     #Check if app exists on Winget Repo
     $Exists = Confirm-Exist $AppID
     if ($Exists){
         #Install or Uninstall command
         if ($Uninstall){
-            Uninstall-App $AppID
+            Uninstall-App $AppID $AppArgs
             #Add to WAU White List if set
             if ($WAUWhiteList){
                 Remove-WAUWhiteList $AppID
             }
         }
         else{
-            Install-App $AppID
+            Install-App $AppID $AppArgs
             #Remove from WAU White List if set
             if ($WAUWhiteList){
                 Add-WAUWhiteList $AppID
