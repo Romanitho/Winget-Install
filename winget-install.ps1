@@ -161,7 +161,7 @@ function Install-App ($AppID,$AppArgs){
         Write-Log "Installing $AppID..." "Yellow"
         $Command = "install --id $AppID --silent --accept-package-agreements --accept-source-agreements $AppArgs"
         Start-Process -FilePath "$winget" -ArgumentList "$Command" -NoNewWindow
-        Get-Process winget -ErrorAction SilentlyContinue | Foreach-Object { $_.WaitForExit() }
+        Get-Process winget, AppInstallerCLI -ErrorAction SilentlyContinue | Foreach-Object { $_.WaitForExit() }
         
         #Check if mods exist
         $ModsInstall = Test-ModsInstall $AppID
@@ -194,7 +194,7 @@ function Uninstall-App ($AppID,$AppArgs){
         Write-Log "Uninstalling $AppID..." "Yellow"
         $Command = "uninstall --id $AppID --silent --accept-source-agreements $AppArgs"
         Start-Process -FilePath "$winget" -ArgumentList "$Command" -NoNewWindow
-        Get-Process winget -ErrorAction SilentlyContinue | Foreach-Object { $_.WaitForExit() }
+        Get-Process winget, AppInstallerCLI -ErrorAction SilentlyContinue | Foreach-Object { $_.WaitForExit() }
         
         #Check if mods exist
         $ModsUninstall = Test-ModsUninstall $AppID
