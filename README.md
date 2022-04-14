@@ -15,6 +15,11 @@ Powershell scripts to install Winget Packages with SCCM/Intune (or similar) or e
 - Put this command line as Install Cmd
 >powershell.exe -ExecutionPolicy Bypass -File winget-install.ps1 -AppIDs Notepad++.Notepad++
 
+### Use Winget native parameters
+You can add custom parameter in your `AppIDs` argument. Don't forget to escape the quote:  
+`powershell.exe -Executionpolicy Bypass -File winget-install.ps1 -AppIDs "Citrix.Workspace --override \"/silent /noreboot /includeSSON /forceinstall\""`  
+Details: https://github.com/Romanitho/Winget-Install/discussions/20
+
 ### Multiple apps at once
 - Run this command
 > powershell.exe -Executionpolicy Bypass -Command .\winget-install.ps1 -AppIDs "7zip.7zip, Notepad++.Notepad++"
