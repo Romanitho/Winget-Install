@@ -173,8 +173,13 @@ function Install-App ($AppID,$AppArgs){
         $IsInstalled = Confirm-Install $AppID
         if ($IsInstalled){
             Write-Log "$AppID successfully installed." "Green"
+            #Add to WAU mods if set
             if ($ModsInstall){
                 Add-WAUMods $ModsInstall
+            }
+            #Add to WAU White List if set
+            if ($WAUWhiteList){
+                Add-WAUWhiteList $AppID
             }
         }
         else{
@@ -206,7 +211,12 @@ function Uninstall-App ($AppID,$AppArgs){
         $IsInstalled = Confirm-Install $AppID
         if (!($IsInstalled)){
             Write-Log "$AppID successfully uninstalled." "Green"
+            #Delete from WAU mods (always)
             Remove-WAUMods $AppID
+            #Remove from WAU White List if set
+            if ($WAUWhiteList){
+                Remove-WAUWhiteList $AppID
+            }
         }
         else{
             Write-Log "$AppID uninstall failed!" "Red"
@@ -236,7 +246,7 @@ function Remove-WAUWhiteList ($AppID){
     #Check if WAU default intall path exists
     $WhiteList = "$env:ProgramData\Winget-AutoUpdate\included_apps.txt"
     if (Test-Path $WhiteList){
-        Write-Log "Remove $AppID to WAU included_apps.txt"
+        Write-Log "Remove $AppID from WAU included_apps.txt"
         #Remove app from list
         $file = Get-Content $WhiteList | Where-Object {$_ -notmatch "$AppID"}
         $file | Out-File $WhiteList
@@ -292,17 +302,9 @@ foreach ($App_Full in $AppIDs){
         #Install or Uninstall command
         if ($Uninstall){
             Uninstall-App $AppID $AppArgs
-            #Add to WAU White List if set
-            if ($WAUWhiteList){
-                Remove-WAUWhiteList $AppID
-            }
         }
         else{
             Install-App $AppID $AppArgs
-            #Remove from WAU White List if set
-            if ($WAUWhiteList){
-                Add-WAUWhiteList $AppID
-            }
         }
     }
     Start-Sleep 2
