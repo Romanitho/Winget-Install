@@ -134,11 +134,11 @@ function Confirm-Exist ($AppID){
 
 #Check if modifications exist in "mods" directory
 function Test-ModsInstall ($AppID){
-    if (Test-Path -Path "$PSScriptRoot\mods\$AppID-install.ps1" -PathType Leaf){
+    if (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1"){
         $ModsInstall = "$PSScriptRoot\mods\$AppID-install.ps1"
         return $ModsInstall
     }
-    elseif (Test-Path -Path "$PSScriptRoot\mods\$AppID-upgrade.ps1" -PathType Leaf){
+    elseif (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1"){
         $ModsUpgrade = "$PSScriptRoot\mods\$AppID-upgrade.ps1"
         return $ModsUpgrade
     }
@@ -148,7 +148,7 @@ function Test-ModsInstall ($AppID){
 }
 
 function Test-ModsUninstall ($AppID){
-    if (Test-Path -Path "$PSScriptRoot\mods\$AppID-uninstall.ps1" -PathType Leaf){
+    if (Test-Path "$PSScriptRoot\mods\$AppID-uninstall.ps1"){
         $ModsUninstall = "$PSScriptRoot\mods\$AppID-uninstall.ps1"
         return $ModsUninstall
     }
