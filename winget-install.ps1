@@ -134,9 +134,13 @@ function Confirm-Exist ($AppID){
 
 #Check if modifications exist in "mods" directory
 function Test-ModsInstall ($AppID){
-    if (Test-Path -Path "$PSScriptRoot\mods\$AppID-install.ps1" -PathType Leaf){
+    if (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1"){
         $ModsInstall = "$PSScriptRoot\mods\$AppID-install.ps1"
         return $ModsInstall
+    }
+    elseif (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1"){
+        $ModsUpgrade = "$PSScriptRoot\mods\$AppID-upgrade.ps1"
+        return $ModsUpgrade
     }
     else{
         return 0
@@ -144,7 +148,7 @@ function Test-ModsInstall ($AppID){
 }
 
 function Test-ModsUninstall ($AppID){
-    if (Test-Path -Path "$PSScriptRoot\mods\$AppID-uninstall.ps1" -PathType Leaf){
+    if (Test-Path "$PSScriptRoot\mods\$AppID-uninstall.ps1"){
         $ModsUninstall = "$PSScriptRoot\mods\$AppID-uninstall.ps1"
         return $ModsUninstall
     }
@@ -165,7 +169,7 @@ function Install-App ($AppID,$AppArgs){
         
         #Check if mods exist
         $ModsInstall = Test-ModsInstall $AppID
-        if ($ModsInstall){
+        if ($ModsInstall -like "*$AppID-install*"){
             Write-Log "Modifications for $AppID during install are being applied..." "Yellow"
             & "$ModsInstall"
         }
@@ -173,9 +177,9 @@ function Install-App ($AppID,$AppArgs){
         $IsInstalled = Confirm-Install $AppID
         if ($IsInstalled){
             Write-Log "$AppID successfully installed." "Green"
-            #Add to WAU mods if set
+            #Add to WAU mods if exists
             if ($ModsInstall){
-                Add-WAUMods $ModsInstall
+                Add-WAUMods $AppID
             }
             #Add to WAU White List if set
             if ($WAUWhiteList){
@@ -211,7 +215,7 @@ function Uninstall-App ($AppID,$AppArgs){
         $IsInstalled = Confirm-Install $AppID
         if (!($IsInstalled)){
             Write-Log "$AppID successfully uninstalled." "Green"
-            #Delete from WAU mods (always)
+            #Remove from WAU mods (always)
             Remove-WAUMods $AppID
             #Remove from WAU White List if set
             if ($WAUWhiteList){
@@ -254,13 +258,13 @@ function Remove-WAUWhiteList ($AppID){
 }
 
 #Function to Add Mods to WAU "mods"
-function Add-WAUMods ($ModsInstall){
+function Add-WAUMods ($AppID){
     #Check if WAU default intall path exists
     $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
     if (Test-Path $Mods){
-        Write-Log "Add $ModsInstall to WAU 'mods'"
+        Write-Log "Add modifications for $AppID to WAU 'mods'"
         #Add mods
-        Copy-Item "$ModsInstall" -Destination "$Mods" -Force
+        Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*-uninstall*" -Force
     }
 }
 
@@ -268,10 +272,10 @@ function Add-WAUMods ($ModsInstall){
 function Remove-WAUMods ($AppID){
     #Check if WAU default intall path exists
     $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
-    if (Test-Path $Mods"\$AppID*"){
-        Write-Log "Remove $AppID-modifications from WAU 'mods'"
+    if (Test-Path "$Mods\$AppID*"){
+        Write-Log "Remove $AppID modifications from WAU 'mods'"
         #Remove mods
-        Remove-Item -Path $Mods"\$AppID*" -Force
+        Remove-Item -Path "$Mods\$AppID*" -Force
     }
 }
 
