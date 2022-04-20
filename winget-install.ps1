@@ -107,7 +107,7 @@ function Confirm-Install ($AppID){
     #Get "Winget List AppID"
     $InstalledApp = & $winget list --Id $AppID --accept-source-agreements | Out-String
 
-    #Return if AppID existe in the list
+    #Return if AppID exists in the list
     if ($InstalledApp -match [regex]::Escape($AppID)){
         return $true
     }
