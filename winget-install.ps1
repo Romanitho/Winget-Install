@@ -138,6 +138,10 @@ function Test-ModsInstall ($AppID){
         $ModsInstall = "$PSScriptRoot\mods\$AppID-install.ps1"
         return $ModsInstall
     }
+    elseif (Test-Path "$PSScriptRoot\mods\$AppID-install-once.ps1"){
+        $ModsInstallOnce = "$PSScriptRoot\mods\$AppID-install-once.ps1"
+        return $ModsInstallOnce
+    }
     elseif (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1"){
         $ModsUpgrade = "$PSScriptRoot\mods\$AppID-upgrade.ps1"
         return $ModsUpgrade
@@ -178,7 +182,7 @@ function Install-App ($AppID,$AppArgs){
         if ($IsInstalled){
             Write-Log "$AppID successfully installed." "Green"
             #Add to WAU mods if exists
-            if ($ModsInstall){
+            if (($ModsInstall -like "*$AppID-install.ps1") -or ($ModsInstall -like "*$AppID-upgrade.ps1")){
                 Add-WAUMods $AppID
             }
             #Add to WAU White List if set
@@ -264,7 +268,7 @@ function Add-WAUMods ($AppID){
     if (Test-Path $Mods){
         Write-Log "Add modifications for $AppID to WAU 'mods'"
         #Add mods
-        Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*-uninstall*" -Force
+        Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*-install-once*","*-uninstall*" -Force
     }
 }
 
