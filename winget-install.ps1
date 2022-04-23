@@ -139,7 +139,7 @@ function Test-ModsInstall ($AppID){
         return $ModsInstallOnce
     }
     elseif (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1"){
-        $ModsInstallOnce = "$PSScriptRoot\mods\$AppID-install.ps1"
+        $ModsInstall = "$PSScriptRoot\mods\$AppID-install.ps1"
         return $ModsInstall
     }
     elseif (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1"){
