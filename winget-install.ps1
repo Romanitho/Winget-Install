@@ -267,7 +267,7 @@ function Add-WAUMods ($AppID){
     $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
     if (Test-Path $Mods){
         #Add mods
-        if ((Test-Path "$PSScriptRoot\mods\$AppID-install*") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade*")){
+        if ((Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1")){
             Write-Log "Add modifications for $AppID to WAU 'mods'"
             Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*-install-once*","*-uninstall*" -Force
         }
