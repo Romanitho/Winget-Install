@@ -263,20 +263,20 @@ function Remove-WAUWhiteList ($AppID){
 
 #Function to Add Mods to WAU "mods"
 function Add-WAUMods ($AppID){
-    #Check if WAU default intall path exists
+    #Check if WAU default install path exists
     $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
     if (Test-Path $Mods){
         #Add mods
         if (Test-Path "$PSScriptRoot\mods\$AppID-install*"){
             Write-Log "Add modifications for $AppID to WAU 'mods'"
+            Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*-install-once*","*-uninstall*" -Force
         }
-        Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*-install-once*","*-uninstall*" -Force
     }
 }
 
 #Function to Remove Mods from WAU "mods"
 function Remove-WAUMods ($AppID){
-    #Check if WAU default intall path exists
+    #Check if WAU default install path exists
     $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
     if (Test-Path "$Mods\$AppID*"){
         Write-Log "Remove $AppID modifications from WAU 'mods'"
