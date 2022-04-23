@@ -182,7 +182,7 @@ function Install-App ($AppID,$AppArgs){
         if ($IsInstalled){
             Write-Log "$AppID successfully installed." "Green"
             #Add to WAU mods if exists
-            if (($ModsInstall -like "*$AppID-install.ps1") -or ($ModsInstall -like "*$AppID-upgrade.ps1")){
+            if (($ModsInstall -like "*$AppID-install*") -or ($ModsInstall -like "*$AppID-upgrade*")){
                 Add-WAUMods $AppID
             }
             #Add to WAU White List if set
@@ -266,8 +266,10 @@ function Add-WAUMods ($AppID){
     #Check if WAU default intall path exists
     $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
     if (Test-Path $Mods){
-        Write-Log "Add modifications for $AppID to WAU 'mods'"
         #Add mods
+        if (Test-Path "$PSScriptRoot\mods\$AppID-install*"){
+            Write-Log "Add modifications for $AppID to WAU 'mods'"
+        }
         Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*-install-once*","*-uninstall*" -Force
     }
 }
