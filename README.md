@@ -38,7 +38,7 @@ https://github.com/Romanitho/Winget-autoupdate
 
 but most of the time, winget does not manage silent uninstall correcty.
 - I would suggest to use the original application uninstaller method, something like this:
->‪C:\Program Files\Notepad++\uninstall.exe /S
+> ‪C:\Program Files\Notepad++\uninstall.exe /S
 
 ## Custom (Mods)
 
