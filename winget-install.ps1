@@ -134,7 +134,11 @@ function Confirm-Exist ($AppID){
 
 #Check if modifications exist in "mods" directory
 function Test-ModsInstall ($AppID){
-    if (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1"){
+    if (Test-Path "$PSScriptRoot\mods\$AppID-install-once.ps1"){
+        $ModsInstallOnce = "$PSScriptRoot\mods\$AppID-install-once.ps1"
+        return $ModsInstallOnce
+    }
+    elseif (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1"){
         $ModsInstall = "$PSScriptRoot\mods\$AppID-install.ps1"
         return $ModsInstall
     }
@@ -178,7 +182,7 @@ function Install-App ($AppID,$AppArgs){
         if ($IsInstalled){
             Write-Log "$AppID successfully installed." "Green"
             #Add to WAU mods if exists
-            if ($ModsInstall){
+            if (($ModsInstall -like "*$AppID-install*") -or ($ModsInstall -like "*$AppID-upgrade*")){
                 Add-WAUMods $AppID
             }
             #Add to WAU White List if set
@@ -259,18 +263,20 @@ function Remove-WAUWhiteList ($AppID){
 
 #Function to Add Mods to WAU "mods"
 function Add-WAUMods ($AppID){
-    #Check if WAU default intall path exists
+    #Check if WAU default install path exists
     $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
     if (Test-Path $Mods){
-        Write-Log "Add modifications for $AppID to WAU 'mods'"
         #Add mods
-        Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*-uninstall*" -Force
+        if ((Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1")){
+            Write-Log "Add modifications for $AppID to WAU 'mods'"
+            Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*-install-once*","*-uninstall*" -Force
+        }
     }
 }
 
 #Function to Remove Mods from WAU "mods"
 function Remove-WAUMods ($AppID){
-    #Check if WAU default intall path exists
+    #Check if WAU default install path exists
     $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
     if (Test-Path "$Mods\$AppID*"){
         Write-Log "Remove $AppID modifications from WAU 'mods'"
