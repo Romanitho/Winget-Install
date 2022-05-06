@@ -178,7 +178,7 @@ function Install-App ($AppID,$AppArgs){
             #Check if mods exist
             $ModsInstall = Test-ModsInstall $AppID
             if ($ModsInstall -like "*$AppID-install*"){
-                Write-Log "Modifications for $AppID during install are being applied..." "Yellow"
+                Write-Log "Modifications for $AppID after install are being applied..." "Yellow"
                 & "$ModsInstall"
             }
             #Add to WAU mods if exists
