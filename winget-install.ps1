@@ -171,16 +171,16 @@ function Install-App ($AppID,$AppArgs){
         Start-Process -FilePath "$winget" -ArgumentList "$Command" -NoNewWindow
         Get-Process winget, AppInstallerCLI -ErrorAction SilentlyContinue | Foreach-Object { $_.WaitForExit() }
         
-        #Check if mods exist
-        $ModsInstall = Test-ModsInstall $AppID
-        if ($ModsInstall -like "*$AppID-install*"){
-            Write-Log "Modifications for $AppID during install are being applied..." "Yellow"
-            & "$ModsInstall"
-        }
         #Check if install is ok
         $IsInstalled = Confirm-Install $AppID
         if ($IsInstalled){
             Write-Log "$AppID successfully installed." "Green"
+            #Check if mods exist
+            $ModsInstall = Test-ModsInstall $AppID
+            if ($ModsInstall -like "*$AppID-install*"){
+                Write-Log "Modifications for $AppID after install are being applied..." "Yellow"
+                & "$ModsInstall"
+            }
             #Add to WAU mods if exists
             if (($ModsInstall -like "*$AppID-install*") -or ($ModsInstall -like "*$AppID-upgrade*")){
                 Add-WAUMods $AppID
