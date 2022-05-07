@@ -120,7 +120,7 @@ function Add-ScopeMachine ($path) {
             })
         ) -Force
     }
-    $ConfigFile = $ConfigFile | ConvertTo-Json | Out-File $path -Encoding utf8
+    $ConfigFile = $ConfigFile | ConvertTo-Json | Out-File $path -Encoding utf8 -Force
 }
 
 #Check if app is installed
