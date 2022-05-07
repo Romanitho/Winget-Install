@@ -319,11 +319,14 @@ Write-Host "`n"
 #Run Init Function
 Init
 
-#Run Scope Machin funtion
-$UserPath = "$env:LOCALAPPDATA\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\settings.json"
-Add-ScopeMachine $UserPath
-$SystemPath = "$Env:windir\system32\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
-Add-ScopeMachine $SystemPath
+#Run Scope Machine funtion
+if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
+    $SettingsPath = "$Env:windir\system32\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
+}
+else{
+    $SettingsPath = "$env:LOCALAPPDATA\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\settings.json"
+}
+Add-ScopeMachine $SettingsPath
 
 #Run WingetCmd Function
 Get-WingetCmd
