@@ -102,6 +102,27 @@ function Get-WingetCmd {
     Write-Log "Using following Winget Cmd: $winget"
 }
 
+#Function to configure prefered scope option as Machine
+function Add-ScopeMachine ($path) {
+    if (Test-Path $path){
+        $ConfigFile = Get-Content -Path $path | Where-Object {$_ -notmatch '//'} | ConvertFrom-Json
+    }
+    if (!$ConfigFile){
+        $ConfigFile = @{}
+    }
+    if ($ConfigFile.installBehavior.preferences.scope){
+        $ConfigFile.installBehavior.preferences.scope = "Machine"
+    }
+    else {
+        Add-Member -InputObject $ConfigFile -MemberType NoteProperty -Name 'installBehavior' -Value $(
+            New-Object PSObject -Property $(@{preferences = $(
+                    New-Object PSObject -Property $(@{scope = "Machine"}))
+            })
+        ) -Force
+    }
+    $ConfigFile = $ConfigFile | ConvertTo-Json | Out-File $path -Encoding utf8 -Force
+}
+
 #Check if app is installed
 function Confirm-Install ($AppID){
     #Get "Winget List AppID"
@@ -297,6 +318,15 @@ Write-Host "`n"
 
 #Run Init Function
 Init
+
+#Run Scope Machine funtion
+if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
+    $SettingsPath = "$Env:windir\system32\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
+}
+else{
+    $SettingsPath = "$env:LOCALAPPDATA\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\settings.json"
+}
+Add-ScopeMachine $SettingsPath
 
 #Run WingetCmd Function
 Get-WingetCmd
