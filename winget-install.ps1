@@ -45,7 +45,11 @@ param(
 <# FUNCTIONS #>
 
 #Initialization
-function Init {
+function Start-Init {
+
+    #Config console output encoding
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
     #Logs initialisation
     if (!(Test-Path $LogPath)){
         New-Item -ItemType Directory -Force -Path $LogPath | Out-Null
@@ -315,7 +319,7 @@ Write-host "`t###################################"
 Write-Host "`n"
 
 #Run Init Function
-Init
+Start-Init
 
 #Run Scope Machine funtion
 if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
