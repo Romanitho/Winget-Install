@@ -277,7 +277,7 @@ function Remove-WAUWhiteList ($AppID){
     if (Test-Path $WhiteList){
         Write-Log "Remove $AppID from WAU included_apps.txt"
         #Remove app from list
-        $file = Get-Content $WhiteList | Where-Object {$_ -notmatch "$AppID"}
+        $file = Get-Content $WhiteList | Where-Object {$_ -ne "$AppID"}
         $file | Out-File $WhiteList
     }
 }
