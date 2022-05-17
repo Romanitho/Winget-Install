@@ -230,7 +230,7 @@ function Uninstall-App ($AppID,$AppArgs){
     if ($IsInstalled){
         #Uninstall App
         Write-Log "Uninstalling $AppID..." "Yellow"
-        $WingetArgs = "uninstall --id $AppID --accept-package-agreements --accept-source-agreements -h" -split " "
+        $WingetArgs = "uninstall --id $AppID --accept-source-agreements -h" -split " "
         Write-Log "Running: `"$Winget`" $WingetArgs"
         & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
 
