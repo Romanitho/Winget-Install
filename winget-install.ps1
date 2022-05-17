@@ -192,8 +192,9 @@ function Install-App ($AppID,$AppArgs){
     if (!($IsInstalled)){
         #Install App
         Write-Log "Installing $AppID..." "Yellow"
-        $Command = "$winget install --id $AppID --silent --accept-package-agreements --accept-source-agreements $AppArgs"
-        Invoke-Expression $Command | Tee-Object -file $LogFile -Append
+        $WingetArgs = "install --id $AppID --accept-package-agreements --accept-source-agreements -h $AppArgs" -split " "
+        Write-Log "Running: `"$Winget`" $WingetArgs"
+        & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
         
         #Check if install is ok
         $IsInstalled = Confirm-Install $AppID
@@ -229,9 +230,11 @@ function Uninstall-App ($AppID,$AppArgs){
     if ($IsInstalled){
         #Uninstall App
         Write-Log "Uninstalling $AppID..." "Yellow"
-        $Command = "$winget uninstall --id $AppID --silent --accept-source-agreements $AppArgs"
-        Invoke-Expression $Command | Tee-Object -file $LogFile -Append
-        
+        $WingetArgs = "uninstall --id $AppID --accept-package-agreements --accept-source-agreements -h" -split " "
+        Write-Log "Running: `"$Winget`" $WingetArgs"
+        & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
+
+
         #Check if mods exist
         $ModsUninstall = Test-ModsUninstall $AppID
         if ($ModsUninstall){
