@@ -106,9 +106,18 @@ function Get-WingetCmd {
 }
 
 #Function to configure prefered scope option as Machine
-function Add-ScopeMachine ($path) {
-    if (Test-Path $path){
-        $ConfigFile = Get-Content -Path $path | Where-Object {$_ -notmatch '//'} | ConvertFrom-Json
+function Add-ScopeMachine {
+    #Get Settings path for system or current user
+    if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
+        $SettingsPath = "$Env:windir\system32\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
+    }
+    else{
+        $SettingsPath = "$env:LOCALAPPDATA\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\settings.json"
+    }
+    
+    #Check if setting file exist, if not create it and set
+    if (Test-Path $SettingsPath){
+        $ConfigFile = Get-Content -Path $SettingsPath | Where-Object {$_ -notmatch '//'} | ConvertFrom-Json
     }
     if (!$ConfigFile){
         $ConfigFile = @{}
@@ -123,7 +132,7 @@ function Add-ScopeMachine ($path) {
             })
         ) -Force
     }
-    $ConfigFile | ConvertTo-Json | Out-File $path -Encoding utf8 -Force
+    $ConfigFile | ConvertTo-Json | Out-File $SettingsPath -Encoding utf8 -Force
 }
 
 #Check if app is installed
@@ -329,13 +338,7 @@ Write-Host "`t_________________________________________________________`n`n"
 Start-Init
 
 #Run Scope Machine funtion
-if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
-    $SettingsPath = "$Env:windir\system32\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
-}
-else{
-    $SettingsPath = "$env:LOCALAPPDATA\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\settings.json"
-}
-Add-ScopeMachine $SettingsPath
+Add-ScopeMachine
 
 #Run WingetCmd Function
 Get-WingetCmd
