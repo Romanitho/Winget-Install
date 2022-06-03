@@ -346,7 +346,7 @@ foreach ($App_Full in $AppIDs){
     $AppID, $AppArgs = ($App_Full.Trim().Split(" ",2))
 
     #Log current App
-    Write-Log "Start $AppID processing..." "Magenta"
+    Write-Log "Start $AppID processing..." "Blue"
 
     #Check if app exists on Winget Repo
     $Exists = Confirm-Exist $AppID
@@ -361,7 +361,7 @@ foreach ($App_Full in $AppIDs){
     }
 
     #Log current App
-    Write-Log "$AppID processing finished!`n" "Magenta"
+    Write-Log "$AppID processing finished!`n" "Blue"
     Start-Sleep 1
 
 }
