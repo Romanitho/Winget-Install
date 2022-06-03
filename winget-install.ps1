@@ -106,7 +106,7 @@ function Get-WingetCmd {
 }
 
 #Function to configure prefered scope option as Machine
-function Add-ScopeMachine ($path) {
+function Add-ScopeMachine {
     #Get Settings path for system or current user
     if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
         $SettingsPath = "$Env:windir\system32\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
