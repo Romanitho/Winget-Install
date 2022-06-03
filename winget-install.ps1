@@ -57,7 +57,6 @@ function Start-Init {
 
     #Log file
     $Script:LogFile = "$LogPath\install.log"
-    Write-Host "Log path is: $LogFile"
 
     #Log Header
     if ($Uninstall){
@@ -103,7 +102,7 @@ function Get-WingetCmd {
         Write-Log "Winget not installed !" "Red"
         break
     }
-    Write-Log "Using following Winget Cmd: $winget"
+    Write-Log "Using following Winget Cmd: $winget`n"
 }
 
 #Function to configure prefered scope option as Machine
@@ -148,11 +147,11 @@ function Confirm-Exist ($AppID){
 
     #Return if AppID exists
     if ($WingetApp -match [regex]::Escape($AppID)){
-        Write-Log "$AppID exists on Winget Repository." "Cyan"
+        Write-Log "-> $AppID exists on Winget Repository." "Cyan"
         return $true
     }
     else{
-        Write-Log "$AppID does not exist on Winget Repository! Check spelling." "Red"
+        Write-Log "-> $AppID does not exist on Winget Repository! Check spelling." "Red"
         return $false
     }
 }
@@ -191,19 +190,19 @@ function Install-App ($AppID,$AppArgs){
     $IsInstalled = Confirm-Install $AppID
     if (!($IsInstalled)){
         #Install App
-        Write-Log "Installing $AppID..." "Yellow"
+        Write-Log "-> Installing $AppID..." "Yellow"
         $WingetArgs = "install --id $AppID --accept-package-agreements --accept-source-agreements -h $AppArgs" -split " "
-        Write-Log "Running: `"$Winget`" $WingetArgs"
+        Write-Log "-> Running: `"$Winget`" $WingetArgs"
         & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
         
         #Check if install is ok
         $IsInstalled = Confirm-Install $AppID
         if ($IsInstalled){
-            Write-Log "$AppID successfully installed." "Green"
+            Write-Log "-> $AppID successfully installed." "Green"
             #Check if mods exist
             $ModsInstall = Test-ModsInstall $AppID
             if ($ModsInstall -like "*$AppID-install*"){
-                Write-Log "Modifications for $AppID after install are being applied..." "Yellow"
+                Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
                 & "$ModsInstall"
             }
             #Add to WAU mods if exists
@@ -216,11 +215,11 @@ function Install-App ($AppID,$AppArgs){
             }
         }
         else{
-            Write-Log "$AppID installation failed!" "Red"
+            Write-Log "-> $AppID installation failed!" "Red"
         }
     }
     else{
-        Write-Log "$AppID is already installed." "Cyan"
+        Write-Log "-> $AppID is already installed." "Cyan"
     }
 }
 
@@ -229,22 +228,22 @@ function Uninstall-App ($AppID,$AppArgs){
     $IsInstalled = Confirm-Install $AppID
     if ($IsInstalled){
         #Uninstall App
-        Write-Log "Uninstalling $AppID..." "Yellow"
+        Write-Log "-> Uninstalling $AppID..." "Yellow"
         $WingetArgs = "uninstall --id $AppID --accept-source-agreements -h" -split " "
-        Write-Log "Running: `"$Winget`" $WingetArgs"
+        Write-Log "-> Running: `"$Winget`" $WingetArgs"
         & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
 
 
         #Check if mods exist
         $ModsUninstall = Test-ModsUninstall $AppID
         if ($ModsUninstall){
-            Write-Log "Modifications for $AppID during uninstall are being applied..." "Yellow"
+            Write-Log "-> Modifications for $AppID during uninstall are being applied..." "Yellow"
             & "$ModsUninstall"
         }
         #Check if uninstall is ok
         $IsInstalled = Confirm-Install $AppID
         if (!($IsInstalled)){
-            Write-Log "$AppID successfully uninstalled." "Green"
+            Write-Log "-> $AppID successfully uninstalled." "Green"
             #Remove from WAU mods (always)
             Remove-WAUMods $AppID
             #Remove from WAU White List if set
@@ -253,11 +252,11 @@ function Uninstall-App ($AppID,$AppArgs){
             }
         }
         else{
-            Write-Log "$AppID uninstall failed!" "Red"
+            Write-Log "-> $AppID uninstall failed!" "Red"
         }
     }
     else{
-        Write-Log "$AppID is not installed." "Cyan"
+        Write-Log "-> $AppID is not installed." "Cyan"
     }
 }
 
@@ -266,7 +265,7 @@ function Add-WAUWhiteList ($AppID){
     #Check if WAU default intall path exists
     $WhiteList = "$env:ProgramData\Winget-AutoUpdate\included_apps.txt"
     if (Test-Path $WhiteList){
-        Write-Log "Add $AppID to WAU included_apps.txt"
+        Write-Log "-> Add $AppID to WAU included_apps.txt"
         #Add App to "included_apps.txt"
         Add-Content -path $WhiteList -Value "`n$AppID" -Force
         #Remove duplicate and blank lines
@@ -280,7 +279,7 @@ function Remove-WAUWhiteList ($AppID){
     #Check if WAU default intall path exists
     $WhiteList = "$env:ProgramData\Winget-AutoUpdate\included_apps.txt"
     if (Test-Path $WhiteList){
-        Write-Log "Remove $AppID from WAU included_apps.txt"
+        Write-Log "-> Remove $AppID from WAU included_apps.txt"
         #Remove app from list
         $file = Get-Content $WhiteList | Where-Object {$_ -ne "$AppID"}
         $file | Out-File $WhiteList
@@ -294,7 +293,7 @@ function Add-WAUMods ($AppID){
     if (Test-Path $Mods){
         #Add mods
         if ((Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1")){
-            Write-Log "Add modifications for $AppID to WAU 'mods'"
+            Write-Log "-> Add modifications for $AppID to WAU 'mods'"
             Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*-install-once*","*-uninstall*" -Force
         }
     }
@@ -305,7 +304,7 @@ function Remove-WAUMods ($AppID){
     #Check if WAU default install path exists
     $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
     if (Test-Path "$Mods\$AppID*"){
-        Write-Log "Remove $AppID modifications from WAU 'mods'"
+        Write-Log "-> Remove $AppID modifications from WAU 'mods'"
         #Remove mods
         Remove-Item -Path "$Mods\$AppID*" -Force
     }
@@ -313,13 +312,18 @@ function Remove-WAUMods ($AppID){
 
 <# MAIN #>
 
-Write-host "`n"
-Write-host "`t###################################"
-Write-host "`t#                                 #"
-Write-host "`t#         Winget Install          #"
-Write-host "`t#                                 #"
-Write-host "`t###################################"
 Write-Host "`n"
+Write-Host "`t        888       888 d8b  .d8888b.           d8b" -ForegroundColor Cyan
+Write-Host "`t        888   o   888 Y8P d88P  Y88b          Y8P" -ForegroundColor Cyan
+Write-Host "`t        888  d8b  888     888    888" -ForegroundColor Cyan
+Write-Host "`t        888 d888b 888 888 888        888  888 888" -ForegroundColor Cyan
+Write-Host "`t        888d88888b888 888 888  88888 888  888 888" -ForegroundColor Cyan
+Write-Host "`t        88888P Y88888 888 888    888 888  888 888" -ForegroundColor Magenta
+Write-Host "`t        8888P   Y8888 888 Y88b  d88P Y88b 888 888" -ForegroundColor Cyan
+Write-Host "`t        888P     Y888 888  `"Y8888P88  `"Y88888 888`n" -ForegroundColor Cyan
+Write-Host "`t       https://github.com/Romanitho/Winget-Install" -ForegroundColor Magenta
+Write-Host "`t     https://github.com/Romanitho/Winget-Install-GUI`n" -ForegroundColor Cyan
+Write-Host "`t_________________________________________________________`n`n"
 
 #Run Init Function
 Start-Init
@@ -341,6 +345,9 @@ foreach ($App_Full in $AppIDs){
     #Split AppID and Custom arguments
     $AppID, $AppArgs = ($App_Full.Trim().Split(" ",2))
 
+    #Log current App
+    Write-Log "Start $AppID processing..." "Magenta"
+
     #Check if app exists on Winget Repo
     $Exists = Confirm-Exist $AppID
     if ($Exists){
@@ -352,8 +359,12 @@ foreach ($App_Full in $AppIDs){
             Install-App $AppID $AppArgs
         }
     }
-    Start-Sleep 2
+
+    #Log current App
+    Write-Log "$AppID processing finished!`n" "Magenta"
+    Start-Sleep 1
+
 }
 
-Write-Log "###   END REQUEST   ###" "Magenta"
-Start-Sleep 2
+Write-Log "###   END REQUEST   ###`n" "Magenta"
+Start-Sleep 3
