@@ -37,7 +37,7 @@ If '-Uninstall' is used, it removes the app from WAU White List.
 param(
     [Parameter(Mandatory=$True,ParameterSetName="AppIDs")] [String[]] $AppIDs,
     [Parameter(Mandatory=$False)] [Switch] $Uninstall,
-    [Parameter(Mandatory=$False)] [String] $LogPath = "$env:ProgramData\Winget-AutoUpdate\logs",
+    [Parameter(Mandatory=$False)] [String] $LogPath,
     [Parameter(Mandatory=$False)] [Switch] $WAUWhiteList
 )
 
@@ -49,6 +49,19 @@ function Start-Init {
 
     #Config console output encoding
     [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+    #LogPath initialisation
+    if (!($LogPath)){
+        #If LogPath if null, get WAU log path from registry
+        $RegPath = Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Winget-AutoUpdate" -ErrorAction SilentlyContinue
+        if ($RegPath.InstallLocation){
+            $LogPath = "$($RegPath.InstallLocation)\Logs"
+        }
+        else{
+            #Else, set default one
+            $LogPath = "$env:ProgramData\Winget-AutoUpdate\Logs"
+        }
+    }
 
     #Logs initialisation
     if (!(Test-Path $LogPath)){
@@ -272,7 +285,8 @@ function Uninstall-App ($AppID,$AppArgs){
 #Function to Add app to WAU white list
 function Add-WAUWhiteList ($AppID){
     #Check if WAU default intall path exists
-    $WhiteList = "$env:ProgramData\Winget-AutoUpdate\included_apps.txt"
+    $WAUInstallLocation = Get-ItemPropertyValue -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Winget-AutoUpdate" -Name InstallLocation
+    $WhiteList = "$WAUInstallLocation\included_apps.txt"
     if (Test-Path $WhiteList){
         Write-Log "-> Add $AppID to WAU included_apps.txt"
         #Add App to "included_apps.txt"
@@ -286,7 +300,8 @@ function Add-WAUWhiteList ($AppID){
 #Function to Remove app from WAU white list
 function Remove-WAUWhiteList ($AppID){
     #Check if WAU default intall path exists
-    $WhiteList = "$env:ProgramData\Winget-AutoUpdate\included_apps.txt"
+    $WAUInstallLocation = Get-ItemPropertyValue -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Winget-AutoUpdate" -Name InstallLocation
+    $WhiteList = "$WAUInstallLocation\included_apps.txt"
     if (Test-Path $WhiteList){
         Write-Log "-> Remove $AppID from WAU included_apps.txt"
         #Remove app from list
@@ -298,7 +313,8 @@ function Remove-WAUWhiteList ($AppID){
 #Function to Add Mods to WAU "mods"
 function Add-WAUMods ($AppID){
     #Check if WAU default install path exists
-    $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
+    $WAUInstallLocation = Get-ItemPropertyValue -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Winget-AutoUpdate" -Name InstallLocation
+    $Mods = "$WAUInstallLocation\mods"
     if (Test-Path $Mods){
         #Add mods
         if ((Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1")){
@@ -311,7 +327,8 @@ function Add-WAUMods ($AppID){
 #Function to Remove Mods from WAU "mods"
 function Remove-WAUMods ($AppID){
     #Check if WAU default install path exists
-    $Mods = "$env:ProgramData\Winget-AutoUpdate\mods"
+    $WAUInstallLocation = Get-ItemPropertyValue -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Winget-AutoUpdate" -Name InstallLocation
+    $Mods = "$WAUInstallLocation\mods"
     if (Test-Path "$Mods\$AppID*"){
         Write-Log "-> Remove $AppID modifications from WAU 'mods'"
         #Remove mods
