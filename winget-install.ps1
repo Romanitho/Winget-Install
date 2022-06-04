@@ -368,14 +368,14 @@ foreach ($App_Full in $AppIDs){
     #Log current App
     Write-Log "Start $AppID processing..." "Blue"
 
-    #Check if app exists on Winget Repo
-    $Exists = Confirm-Exist $AppID
     if ($Exists){
         #Install or Uninstall command
         if ($Uninstall){
             Uninstall-App $AppID $AppArgs
         }
         else{
+            #Check if app exists on Winget Repo
+            $Exists = Confirm-Exist $AppID
             Install-App $AppID $AppArgs
         }
     }
