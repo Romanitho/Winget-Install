@@ -376,7 +376,10 @@ foreach ($App_Full in $AppIDs){
     else{
         #Check if app exists on Winget Repo
         $Exists = Confirm-Exist $AppID
-        Install-App $AppID $AppArgs
+        if ($Exists){
+            #Install
+            Install-App $AppID $AppArgs
+        }
     }
 
     #Log current App
