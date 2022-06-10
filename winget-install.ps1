@@ -35,10 +35,10 @@ If '-Uninstall' is used, it removes the app from WAU White List.
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$True,ParameterSetName="AppIDs")] [String[]] $AppIDs,
-    [Parameter(Mandatory=$False)] [Switch] $Uninstall,
-    [Parameter(Mandatory=$False)] [String] $LogPath,
-    [Parameter(Mandatory=$False)] [Switch] $WAUWhiteList
+    [Parameter(Mandatory = $True, ParameterSetName = "AppIDs")] [String[]] $AppIDs,
+    [Parameter(Mandatory = $False)] [Switch] $Uninstall,
+    [Parameter(Mandatory = $False)] [String] $LogPath,
+    [Parameter(Mandatory = $False)] [Switch] $WAUWhiteList
 )
 
 
@@ -52,24 +52,24 @@ function Start-Init {
 
     #Get WAU Installed location (if installed)
     $WAURegKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Winget-AutoUpdate\"
-    if (Test-Path $WAURegKey){
+    if (Test-Path $WAURegKey) {
         $Script:WAUInstallLocation = Get-ItemProperty $WAURegKey | Select-Object -ExpandProperty InstallLocation -ErrorAction SilentlyContinue
     }
 
     #LogPath initialisation
-    if (!($LogPath)){
+    if (!($LogPath)) {
         #If LogPath if null, get WAU log path from registry
-        if ($WAUInstallLocation){
+        if ($WAUInstallLocation) {
             $LogPath = "$WAUInstallLocation\Logs"
         }
-        else{
+        else {
             #Else, set default one
             $LogPath = "$env:ProgramData\Winget-AutoUpdate\Logs"
         }
     }
 
     #Logs initialisation
-    if (!(Test-Path $LogPath)){
+    if (!(Test-Path $LogPath)) {
         New-Item -ItemType Directory -Force -Path $LogPath | Out-Null
     }
 
@@ -77,10 +77,10 @@ function Start-Init {
     $Script:LogFile = "$LogPath\install.log"
 
     #Log Header
-    if ($Uninstall){
+    if ($Uninstall) {
         Write-Log "###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW UNINSTALL REQUEST   ###" "Magenta"
     }
-    else{
+    else {
         Write-Log "###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW INSTALL REQUEST   ###" "Magenta"
     }
 
@@ -100,24 +100,24 @@ function Write-Log ($LogMsg, $LogColor = "White") {
 function Get-WingetCmd {
     #Get WinGet Path (if admin context)
     $ResolveWingetPath = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe"
-    if ($ResolveWingetPath){
+    if ($ResolveWingetPath) {
         #If multiple version, pick last one
         $WingetPath = $ResolveWingetPath[-1].Path
     }
     #Get WinGet Location in User context
     $WingetCmd = Get-Command winget.exe -ErrorAction SilentlyContinue
-    if ($WingetCmd){
+    if ($WingetCmd) {
         $Script:Winget = $WingetCmd.Source
     }
     #Get Winget Location in System context (WinGet < 1.17)
-    elseif (Test-Path "$WingetPath\AppInstallerCLI.exe"){
+    elseif (Test-Path "$WingetPath\AppInstallerCLI.exe") {
         $Script:Winget = "$WingetPath\AppInstallerCLI.exe"
     }
     #Get Winget Location in System context (WinGet > 1.17)
-    elseif (Test-Path "$WingetPath\winget.exe"){
+    elseif (Test-Path "$WingetPath\winget.exe") {
         $Script:Winget = "$WingetPath\winget.exe"
     }
-    else{
+    else {
         Write-Log "Winget not installed !" "Red"
         break
     }
@@ -130,81 +130,79 @@ function Add-ScopeMachine {
     if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
         $SettingsPath = "$Env:windir\system32\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
     }
-    else{
+    else {
         $SettingsPath = "$env:LOCALAPPDATA\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\settings.json"
     }
     
     #Check if setting file exist, if not create it and set
-    if (Test-Path $SettingsPath){
-        $ConfigFile = Get-Content -Path $SettingsPath | Where-Object {$_ -notmatch '//'} | ConvertFrom-Json
+    if (Test-Path $SettingsPath) {
+        $ConfigFile = Get-Content -Path $SettingsPath | Where-Object { $_ -notmatch '//' } | ConvertFrom-Json
     }
-    if (!$ConfigFile){
+    if (!$ConfigFile) {
         $ConfigFile = @{}
     }
-    if ($ConfigFile.installBehavior.preferences.scope){
+    if ($ConfigFile.installBehavior.preferences.scope) {
         $ConfigFile.installBehavior.preferences.scope = "Machine"
     }
     else {
-        Add-Member -InputObject $ConfigFile -MemberType NoteProperty -Name 'installBehavior' -Value $(
-            New-Object PSObject -Property $(@{preferences = $(
-                    New-Object PSObject -Property $(@{scope = "Machine"}))
-            })
-        ) -Force
+        $Scope = New-Object PSObject -Property $(@{scope = "Machine" })
+        $Preference = New-Object PSObject -Property $(@{preferences = $Scope })
+        Add-Member -InputObject $ConfigFile -MemberType NoteProperty -Name 'installBehavior' -Value $Preference -Force
     }
     $ConfigFile | ConvertTo-Json | Out-File $SettingsPath -Encoding utf8 -Force
 }
 
 #Check if app is installed
-function Confirm-Install ($AppID){
+function Confirm-Install ($AppID) {
     #Get "Winget List AppID"
     $InstalledApp = & $winget list --Id $AppID --accept-source-agreements | Out-String
 
     #Return if AppID exists in the list
-    if ($InstalledApp -match [regex]::Escape($AppID)){
+    if ($InstalledApp -match [regex]::Escape($AppID)) {
         return $true
     }
-    else{
+    else {
         return $false
     }
 }
 
 #Check if App exists in Winget Repository
-function Confirm-Exist ($AppID){
+function Confirm-Exist ($AppID) {
     #Check is app exists in the winget repository
     $WingetApp = & $winget show --Id $AppID --accept-source-agreements | Out-String
 
     #Return if AppID exists
-    if ($WingetApp -match [regex]::Escape($AppID)){
+    if ($WingetApp -match [regex]::Escape($AppID)) {
         Write-Log "-> $AppID exists on Winget Repository." "Cyan"
         return $true
     }
-    else{
+    else {
         Write-Log "-> $AppID does not exist on Winget Repository! Check spelling." "Red"
         return $false
     }
 }
 
 #Check if modifications exist in "mods" directory
-function Test-ModsInstall ($AppID){
-    if (Test-Path "$PSScriptRoot\mods\$AppID-install-once.ps1"){
+function Test-ModsInstall ($AppID) {
+    if (Test-Path "$PSScriptRoot\mods\$AppID-install-once.ps1") {
         $ModsInstallOnce = "$PSScriptRoot\mods\$AppID-install-once.ps1"
         return $ModsInstallOnce
     }
-    elseif (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1"){
+    elseif (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") {
         $ModsInstall = "$PSScriptRoot\mods\$AppID-install.ps1"
         return $ModsInstall
     }
-    elseif (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1"){
+    elseif (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1") {
         $ModsUpgrade = "$PSScriptRoot\mods\$AppID-upgrade.ps1"
         return $ModsUpgrade
     }
-    else{
+    else {
         return 0
     }
 }
 
-function Test-ModsUninstall ($AppID){
-    if (Test-Path "$PSScriptRoot\mods\$AppID-uninstall.ps1"){
+function Test-ModsUninstall ($AppID) {
+    if (Test-Path "$PSScriptRoot\mods\$AppID-uninstall.ps1") {
         $ModsUninstall = "$PSScriptRoot\mods\$AppID-uninstall.ps1"
         return $ModsUninstall
     }
@@ -214,9 +212,9 @@ function Test-ModsUninstall ($AppID){
 }
 
 #Install function
-function Install-App ($AppID,$AppArgs){
+function Install-App ($AppID, $AppArgs) {
     $IsInstalled = Confirm-Install $AppID
-    if (!($IsInstalled)){
+    if (!($IsInstalled)) {
         #Install App
         Write-Log "-> Installing $AppID..." "Yellow"
         $WingetArgs = "install --id $AppID --accept-package-agreements --accept-source-agreements -h $AppArgs" -split " "
@@ -225,36 +223,36 @@ function Install-App ($AppID,$AppArgs){
         
         #Check if install is ok
         $IsInstalled = Confirm-Install $AppID
-        if ($IsInstalled){
+        if ($IsInstalled) {
             Write-Log "-> $AppID successfully installed." "Green"
             #Check if mods exist
             $ModsInstall = Test-ModsInstall $AppID
-            if ($ModsInstall -like "*$AppID-install*"){
+            if ($ModsInstall -like "*$AppID-install*") {
                 Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
                 & "$ModsInstall"
             }
             #Add to WAU mods if exists
-            if (($ModsInstall -like "*$AppID-install*") -or ($ModsInstall -like "*$AppID-upgrade*")){
+            if (($ModsInstall -like "*$AppID-install*") -or ($ModsInstall -like "*$AppID-upgrade*")) {
                 Add-WAUMods $AppID
             }
             #Add to WAU White List if set
-            if ($WAUWhiteList){
+            if ($WAUWhiteList) {
                 Add-WAUWhiteList $AppID
             }
         }
-        else{
+        else {
             Write-Log "-> $AppID installation failed!" "Red"
         }
     }
-    else{
+    else {
         Write-Log "-> $AppID is already installed." "Cyan"
     }
 }
 
 #Uninstall function
-function Uninstall-App ($AppID,$AppArgs){
+function Uninstall-App ($AppID, $AppArgs) {
     $IsInstalled = Confirm-Install $AppID
-    if ($IsInstalled){
+    if ($IsInstalled) {
         #Uninstall App
         Write-Log "-> Uninstalling $AppID..." "Yellow"
         $WingetArgs = "uninstall --id $AppID --accept-source-agreements -h" -split " "
@@ -263,74 +261,74 @@ function Uninstall-App ($AppID,$AppArgs){
 
         #Check if mods exist
         $ModsUninstall = Test-ModsUninstall $AppID
-        if ($ModsUninstall){
+        if ($ModsUninstall) {
             Write-Log "-> Modifications for $AppID during uninstall are being applied..." "Yellow"
             & "$ModsUninstall"
         }
         #Check if uninstall is ok
         $IsInstalled = Confirm-Install $AppID
-        if (!($IsInstalled)){
+        if (!($IsInstalled)) {
             Write-Log "-> $AppID successfully uninstalled." "Green"
             #Remove from WAU mods (always)
             Remove-WAUMods $AppID
             #Remove from WAU White List if set
-            if ($WAUWhiteList){
+            if ($WAUWhiteList) {
                 Remove-WAUWhiteList $AppID
             }
         }
-        else{
+        else {
             Write-Log "-> $AppID uninstall failed!" "Red"
         }
     }
-    else{
+    else {
         Write-Log "-> $AppID is not installed." "Cyan"
     }
 }
 
 #Function to Add app to WAU white list
-function Add-WAUWhiteList ($AppID){
+function Add-WAUWhiteList ($AppID) {
     #Check if WAU default intall path exists
     $WhiteList = "$WAUInstallLocation\included_apps.txt"
-    if (Test-Path $WhiteList){
+    if (Test-Path $WhiteList) {
         Write-Log "-> Add $AppID to WAU included_apps.txt"
         #Add App to "included_apps.txt"
         Add-Content -path $WhiteList -Value "`n$AppID" -Force
         #Remove duplicate and blank lines
-        $file = Get-Content $WhiteList | Select-Object -Unique | Where-Object {$_.trim() -ne ""} | Sort-Object
+        $file = Get-Content $WhiteList | Select-Object -Unique | Where-Object { $_.trim() -ne "" } | Sort-Object
         $file | Out-File $WhiteList
     }
 }
 
 #Function to Remove app from WAU white list
-function Remove-WAUWhiteList ($AppID){
+function Remove-WAUWhiteList ($AppID) {
     #Check if WAU default intall path exists
     $WhiteList = "$WAUInstallLocation\included_apps.txt"
-    if (Test-Path $WhiteList){
+    if (Test-Path $WhiteList) {
         Write-Log "-> Remove $AppID from WAU included_apps.txt"
         #Remove app from list
-        $file = Get-Content $WhiteList | Where-Object {$_ -ne "$AppID"}
+        $file = Get-Content $WhiteList | Where-Object { $_ -ne "$AppID" }
         $file | Out-File $WhiteList
     }
 }
 
 #Function to Add Mods to WAU "mods"
-function Add-WAUMods ($AppID){
+function Add-WAUMods ($AppID) {
     #Check if WAU default install path exists
     $Mods = "$WAUInstallLocation\mods"
-    if (Test-Path $Mods){
+    if (Test-Path $Mods) {
         #Add mods
-        if ((Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1")){
+        if ((Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1")) {
             Write-Log "-> Add modifications for $AppID to WAU 'mods'"
-            Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*-install-once*","*-uninstall*" -Force
+            Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*-install-once*", "*-uninstall*" -Force
         }
     }
 }
 
 #Function to Remove Mods from WAU "mods"
-function Remove-WAUMods ($AppID){
+function Remove-WAUMods ($AppID) {
     #Check if WAU default install path exists
     $Mods = "$WAUInstallLocation\mods"
-    if (Test-Path "$Mods\$AppID*"){
+    if (Test-Path "$Mods\$AppID*") {
         Write-Log "-> Remove $AppID modifications from WAU 'mods'"
         #Remove mods
         Remove-Item -Path "$Mods\$AppID*" -Force
@@ -362,21 +360,21 @@ Add-ScopeMachine
 Get-WingetCmd
 
 #Run install or uninstall for all apps
-foreach ($App_Full in $AppIDs){
+foreach ($App_Full in $AppIDs) {
     #Split AppID and Custom arguments
-    $AppID, $AppArgs = ($App_Full.Trim().Split(" ",2))
+    $AppID, $AppArgs = ($App_Full.Trim().Split(" ", 2))
 
     #Log current App
     Write-Log "Start $AppID processing..." "Blue"
 
     #Install or Uninstall command
-    if ($Uninstall){
+    if ($Uninstall) {
         Uninstall-App $AppID $AppArgs
     }
-    else{
+    else {
         #Check if app exists on Winget Repo
         $Exists = Confirm-Exist $AppID
-        if ($Exists){
+        if ($Exists) {
             #Install
             Install-App $AppID $AppArgs
         }
