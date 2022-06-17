@@ -128,24 +128,31 @@ function Get-WingetCmd {
 function Add-ScopeMachine {
     #Get Settings path for system or current user
     if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
-        $SettingsPath = "$Env:windir\system32\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
+        if ([Environment]::Is64BitProcess -ne [Environment]::Is64BitOperatingSystem) {
+            $SettingsPath = "$Env:windir\sysnative\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
+        }
+        else {
+            $SettingsPath = "$Env:windir\System32\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
+        } 
     }
     else {
         $SettingsPath = "$env:LOCALAPPDATA\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\settings.json"
     }
     
-    #Check if setting file exist, if not create it and set
+    #Check if setting file exist, if not create it
     if (Test-Path $SettingsPath) {
         $ConfigFile = Get-Content -Path $SettingsPath | Where-Object { $_ -notmatch '//' } | ConvertFrom-Json
     }
+
     if (!$ConfigFile) {
         $ConfigFile = @{}
     }
-    if ($ConfigFile.installBehavior.preferences.scope) {
-        $ConfigFile.installBehavior.preferences.scope = "Machine"
+
+    if ($ConfigFile.installBehavior.preferences) {
+        Add-Member -InputObject $ConfigFile.installBehavior.preferences -MemberType NoteProperty -Name 'scope' -Value 'Machine' -Force
     }
     else {
-        $Scope = New-Object PSObject -Property $(@{scope = "Machine" })
+        $Scope = New-Object PSObject -Property $(@{scope = 'Machine' })
         $Preference = New-Object PSObject -Property $(@{preferences = $Scope })
         Add-Member -InputObject $ConfigFile -MemberType NoteProperty -Name 'installBehavior' -Value $Preference -Force
     }
