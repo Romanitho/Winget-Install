@@ -99,9 +99,9 @@ function Write-Log ($LogMsg, $LogColor = "White") {
 #Get WinGet Location Function
 function Get-WingetCmd {
     #Get WinGet Path (if admin context)
-    $ResolveWingetPath = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe"
+    $ResolveWingetPath = Resolve-Path "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe"
     if ($ResolveWingetPath) {
-        #If multiple version, pick last one
+        #If multiple versions (when pre-release versions are installed), pick last one
         $WingetPath = $ResolveWingetPath[-1].Path
     }
     #Get WinGet Location in User context
@@ -109,11 +109,7 @@ function Get-WingetCmd {
     if ($WingetCmd) {
         $Script:Winget = $WingetCmd.Source
     }
-    #Get Winget Location in System context (WinGet < 1.17)
-    elseif (Test-Path "$WingetPath\AppInstallerCLI.exe") {
-        $Script:Winget = "$WingetPath\AppInstallerCLI.exe"
-    }
-    #Get Winget Location in System context (WinGet > 1.17)
+    #Get Winget Location in System context
     elseif (Test-Path "$WingetPath\winget.exe") {
         $Script:Winget = "$WingetPath\winget.exe"
     }
