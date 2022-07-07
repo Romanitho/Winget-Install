@@ -158,7 +158,7 @@ function Add-ScopeMachine {
 #Check if app is installed
 function Confirm-Install ($AppID) {
     #Get "Winget List AppID"
-    $InstalledApp = & $winget list --Id $AppID --accept-source-agreements | Out-String
+    $InstalledApp = & $winget list --Id $AppID -e --accept-source-agreements | Out-String
 
     #Return if AppID exists in the list
     if ($InstalledApp -match [regex]::Escape($AppID)) {
@@ -172,7 +172,7 @@ function Confirm-Install ($AppID) {
 #Check if App exists in Winget Repository
 function Confirm-Exist ($AppID) {
     #Check is app exists in the winget repository
-    $WingetApp = & $winget show --Id $AppID --accept-source-agreements | Out-String
+    $WingetApp = & $winget show --Id $AppID -e --accept-source-agreements | Out-String
 
     #Return if AppID exists
     if ($WingetApp -match [regex]::Escape($AppID)) {
@@ -220,7 +220,7 @@ function Install-App ($AppID, $AppArgs) {
     if (!($IsInstalled)) {
         #Install App
         Write-Log "-> Installing $AppID..." "Yellow"
-        $WingetArgs = "install --id $AppID --accept-package-agreements --accept-source-agreements -h $AppArgs" -split " "
+        $WingetArgs = "install --id $AppID -e --accept-package-agreements --accept-source-agreements -h $AppArgs" -split " "
         Write-Log "-> Running: `"$Winget`" $WingetArgs"
         & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
         
@@ -258,7 +258,7 @@ function Uninstall-App ($AppID, $AppArgs) {
     if ($IsInstalled) {
         #Uninstall App
         Write-Log "-> Uninstalling $AppID..." "Yellow"
-        $WingetArgs = "uninstall --id $AppID --accept-source-agreements -h" -split " "
+        $WingetArgs = "uninstall --id $AppID -e --accept-source-agreements -h" -split " "
         Write-Log "-> Running: `"$Winget`" $WingetArgs"
         & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
 
