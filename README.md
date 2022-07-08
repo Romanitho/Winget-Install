@@ -12,8 +12,8 @@ Powershell scripts to install Winget Packages with SCCM/Intune (or similar) or e
 ### Intune
 - Create Intunewin with the "winget-install.ps1" script
 - Create a Win32 application in Intune
-- Put this command line as Install Cmd
-> powershell.exe -ExecutionPolicy Bypass -File winget-install.ps1 -AppIDs Notepad++.Notepad++
+- Put this command line as Install Cmd (Must call 64 bits powershell in order to work):
+> "%systemroot%\sysnative\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File winget-install.ps1 -AppIDs Notepad++.Notepad++
 
 ### Use Winget native parameters
 You can add custom parameter in your `AppIDs` argument. Don't forget to escape the quote:  
