@@ -99,9 +99,9 @@ function Write-Log ($LogMsg, $LogColor = "White") {
 #Get WinGet Location Function
 function Get-WingetCmd {
     #Get WinGet Path (if admin context)
-    $ResolveWingetPath = Resolve-Path "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe"
+    $ResolveWingetPath = Resolve-Path "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe" | Sort-Object { [version]($_.Path -replace '^[^\d]+_((\d+\.)*\d+)_.*', '$1') }
     if ($ResolveWingetPath) {
-        #If multiple versions (when pre-release versions are installed), pick last one
+        #If multiple versions, pick last one
         $WingetPath = $ResolveWingetPath[-1].Path
     }
     #Get WinGet Location in User context
@@ -114,7 +114,7 @@ function Get-WingetCmd {
         $Script:Winget = "$WingetPath\winget.exe"
     }
     else {
-        Write-Log "Winget not installed !" "Red"
+        Write-Log "Winget not installed or detected !" "Red"
         break
     }
     Write-Log "Using following Winget Cmd: $winget`n"
