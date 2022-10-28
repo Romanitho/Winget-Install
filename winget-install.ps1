@@ -74,7 +74,12 @@ function Start-Init {
     }
 
     #Log file
-    $Script:LogFile = "$LogPath\install.log"
+    if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
+        $Script:LogFile = "$LogPath\install.log"
+    }
+    else {
+        $Script:LogFile = "$LogPath\install_$env:UserName.log"
+    }
 
     #Log Header
     if ($Uninstall) {
