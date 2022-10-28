@@ -74,7 +74,7 @@ function Start-Init {
     }
 
     #Log file
-    $Script:LogFile = "$LogPath\install.log"
+    $Script:LogFile = "$LogPath\install_$env:UserName.log"
 
     #Log Header
     if ($Uninstall) {
