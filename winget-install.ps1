@@ -104,7 +104,7 @@ function Write-Log ($LogMsg, $LogColor = "White") {
 #Get WinGet Location Function
 function Get-WingetCmd {
     #Get WinGet Path (if admin context)
-    $ResolveWingetPath = Resolve-Path "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe" | Sort-Object { [version]($_.Path -replace '^[^\d]+_((\d+\.)*\d+)_.*', '$1') }
+    $ResolveWingetPath = Resolve-Path "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*_*__8wekyb3d8bbwe" | Sort-Object { [version]($_.Path -replace '^[^\d]+_((\d+\.)*\d+)_.*', '$1') }
     if ($ResolveWingetPath) {
         #If multiple versions, pick last one
         $WingetPath = $ResolveWingetPath[-1].Path
@@ -129,17 +129,12 @@ function Get-WingetCmd {
 function Add-ScopeMachine {
     #Get Settings path for system or current user
     if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
-        if ([Environment]::Is64BitProcess -ne [Environment]::Is64BitOperatingSystem) {
-            $SettingsPath = "$Env:windir\sysnative\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
-        }
-        else {
-            $SettingsPath = "$Env:windir\System32\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
-        } 
+        $SettingsPath = "$Env:windir\System32\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
     }
     else {
         $SettingsPath = "$env:LOCALAPPDATA\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\settings.json"
     }
-    
+
     #Check if setting file exist, if not create it
     if (Test-Path $SettingsPath) {
         $ConfigFile = Get-Content -Path $SettingsPath | Where-Object { $_ -notmatch '//' } | ConvertFrom-Json
@@ -228,7 +223,7 @@ function Install-App ($AppID, $AppArgs) {
         $WingetArgs = "install --id $AppID -e --accept-package-agreements --accept-source-agreements -h $AppArgs" -split " "
         Write-Log "-> Running: `"$Winget`" $WingetArgs"
         & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
-        
+
         #Check if install is ok
         $IsInstalled = Confirm-Install $AppID
         if ($IsInstalled) {
@@ -344,6 +339,14 @@ function Remove-WAUMods ($AppID) {
 }
 
 <# MAIN #>
+
+#If running as a 32-bit process on an x64 system, re-launch as a 64-bit process
+if ("$env:PROCESSOR_ARCHITEW6432" -ne "ARM64") {
+    if (Test-Path "$($env:WINDIR)\SysNative\WindowsPowerShell\v1.0\powershell.exe") {
+        Start-Process "$($env:WINDIR)\SysNative\WindowsPowerShell\v1.0\powershell.exe" -Wait -NoNewWindow -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command $($MyInvocation.line)"
+        Exit $lastexitcode
+    }
+}
 
 Write-Host "`n"
 Write-Host "`t        888       888 d8b  .d8888b.           d8b" -ForegroundColor Cyan
