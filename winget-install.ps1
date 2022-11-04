@@ -228,17 +228,17 @@ function Install-App ($AppID, $AppArgs) {
         $IsInstalled = Confirm-Install $AppID
         if ($IsInstalled) {
             Write-Log "-> $AppID successfully installed." "Green"
-            #Check if mods exist already
-            $Mods = "$WAUInstallLocation\mods"
-            if (Test-Path "$Mods\$AppID-install.ps1") {
-                Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
-                & "$Mods\$AppID-install.ps1"
-            }
             #Check if mods exist
             $ModsInstall = Test-ModsInstall $AppID
             if ($ModsInstall -like "*$AppID-install*") {
-                Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
+                Write-Log "-> Modifications for $AppID after install are being applied... $ModsInstall" "Yellow"
                 & "$ModsInstall"
+            }
+            #Check if a -install.ps1 mod already exist and run (if not already executed)
+            $InstallMods = "$WAUInstallLocation\mods\$AppID-install.ps1"
+            if ((Test-Path "$InstallMods") -and ($ModsInstall -notlike "*$AppID-install.*")) {
+                Write-Log "-> Modifications for $AppID after install are being applied... $InstallMods" "Yellow"
+                & "$InstallMods"
             }
             #Add to WAU mods if exists
             if (($ModsInstall -like "*$AppID-install*") -or ($ModsInstall -like "*$AppID-upgrade*")) {
@@ -280,7 +280,7 @@ function Uninstall-App ($AppID, $AppArgs) {
             Write-Log "-> $AppID successfully uninstalled." "Green"
             #Check if mods exist
             $ModsInstall = Test-ModsInstall $AppID
-            if (($ModsInstall -like "*$AppID-install*")  -or ($ModsInstall -like "*$AppID-upgrade*")) {
+            if (($ModsInstall -like "*$AppID-install.ps1") -or ($ModsInstall -like "*$AppID-upgrade.ps1")) {
                 #Remove from WAU mods (if it's been installed earlier)
                 Remove-WAUMods $AppID
             }

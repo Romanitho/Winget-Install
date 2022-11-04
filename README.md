@@ -48,12 +48,10 @@ Just put the script with the App ID followed by the "-install-once", "-install" 
 and put this in the Mods directory (`AppID-install-once.ps1` overrides `AppID-install.ps1`)
 > Example:  
 > If you want to run a script just after uninstalling FileZilla, call your script like this:
-> `TimKosse.FileZilla.Client-uninstall.ps1`
-
-In the case of FileZilla it spawns a process "Un_A.exe" (NullSoft) as a graphical uninstallation and this we will have to wait for completion of before moving on to checking if the uninstallation suceeded or not.
+> `AppID-uninstall.ps1`
 
 If your using WAU (Winget-AutoUpdate) `AppID-install.ps1` and `AppID-upgrade.ps1` gets copied to the WAU mods directory and runs when upgrading apps.
-They are deleted on an uninstall.
+They are deleted on an uninstall (if not externally managed).
 
 ## Other ideas and approaches
 https://github.com/o-l-a-v/winget-intune-win32

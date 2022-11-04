@@ -1,1 +1,0 @@
-Get-Process Un_A -ErrorAction SilentlyContinue | Foreach-Object { $_.WaitForExit() }
