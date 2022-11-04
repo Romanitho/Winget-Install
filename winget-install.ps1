@@ -231,13 +231,13 @@ function Install-App ($AppID, $AppArgs) {
             #Check if mods exist
             $ModsInstall = Test-ModsInstall $AppID
             if ($ModsInstall -like "*$AppID-install*") {
-                Write-Log "-> Modifications for $AppID after install are being applied... $ModsInstall" "Yellow"
+                Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
                 & "$ModsInstall"
             }
             #Check if a -install.ps1 mod already exist and run (if not already executed)
             $InstallMods = "$WAUInstallLocation\mods\$AppID-install.ps1"
             if ((Test-Path "$InstallMods") -and ($ModsInstall -notlike "*$AppID-install.*")) {
-                Write-Log "-> Modifications for $AppID after install are being applied... $InstallMods" "Yellow"
+                Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
                 & "$InstallMods"
             }
             #Add to WAU mods if exists
