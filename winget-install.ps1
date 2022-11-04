@@ -228,6 +228,12 @@ function Install-App ($AppID, $AppArgs) {
         $IsInstalled = Confirm-Install $AppID
         if ($IsInstalled) {
             Write-Log "-> $AppID successfully installed." "Green"
+            #Check if mods exist already
+            $Mods = "$WAUInstallLocation\mods"
+            if (Test-Path "$Mods\$AppID-install.ps1") {
+                Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
+                & "$Mods\$AppID-install.ps1"
+            }
             #Check if mods exist
             $ModsInstall = Test-ModsInstall $AppID
             if ($ModsInstall -like "*$AppID-install*") {
@@ -272,8 +278,12 @@ function Uninstall-App ($AppID, $AppArgs) {
         $IsInstalled = Confirm-Install $AppID
         if (!($IsInstalled)) {
             Write-Log "-> $AppID successfully uninstalled." "Green"
-            #Remove from WAU mods (always)
-            Remove-WAUMods $AppID
+            #Check if mods exist
+            $ModsInstall = Test-ModsInstall $AppID
+            if (($ModsInstall -like "*$AppID-install*")  -or ($ModsInstall -like "*$AppID-upgrade*")) {
+                #Remove from WAU mods (if it's been installed earlier)
+                Remove-WAUMods $AppID
+            }
             #Remove from WAU White List if set
             if ($WAUWhiteList) {
                 Remove-WAUWhiteList $AppID
