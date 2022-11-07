@@ -228,21 +228,23 @@ function Install-App ($AppID, $AppArgs) {
         $IsInstalled = Confirm-Install $AppID
         if ($IsInstalled) {
             Write-Log "-> $AppID successfully installed." "Green"
-            #Check if mods exist
+            #Check if an install/upgrade mod exist
             $ModsInstall = Test-ModsInstall $AppID
-            if ($ModsInstall -like "*$AppID-install*") {
-                Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
-                & "$ModsInstall"
-            }
-            #Check if a -install.ps1 mod already exist and run (if not already executed)
-            $InstallMods = "$WAUInstallLocation\mods\$AppID-install.ps1"
-            if ((Test-Path "$InstallMods") -and ($ModsInstall -notlike "*$AppID-install.*")) {
-                Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
-                & "$InstallMods"
-            }
-            #Add to WAU mods if exists
             if (($ModsInstall -like "*$AppID-install*") -or ($ModsInstall -like "*$AppID-upgrade*")) {
+                if ($ModsInstall -like "*$AppID-install*") {
+                    Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
+                    & "$ModsInstall"
+                }
+                #Add mods if deployed from app install
                 Add-WAUMods $AppID
+            }
+            else {
+                #Check if an install mod already exist
+                $ModsInstall = "$WAUInstallLocation\mods\$AppID-install.ps1"
+                if (Test-Path "$ModsInstall") {
+                    Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
+                    & "$ModsInstall"
+                }
             }
             #Add to WAU White List if set
             if ($WAUWhiteList) {
@@ -268,21 +270,28 @@ function Uninstall-App ($AppID, $AppArgs) {
         Write-Log "-> Running: `"$Winget`" $WingetArgs"
         & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
 
-        #Check if mods exist
-        $ModsUninstall = Test-ModsUninstall $AppID
-        if ($ModsUninstall) {
-            Write-Log "-> Modifications for $AppID during uninstall are being applied..." "Yellow"
-            & "$ModsUninstall"
-        }
         #Check if uninstall is ok
         $IsInstalled = Confirm-Install $AppID
         if (!($IsInstalled)) {
             Write-Log "-> $AppID successfully uninstalled." "Green"
-            #Check if mods exist
-            $ModsInstall = Test-ModsInstall $AppID
-            if (($ModsInstall -like "*$AppID-install.ps1") -or ($ModsInstall -like "*$AppID-upgrade.ps1")) {
-                #Remove from WAU mods (if it's been installed earlier)
-                Remove-WAUMods $AppID
+            #Check if an uninstall mod exist
+            $ModsUninstall = Test-ModsUninstall $AppID
+            if ($ModsUninstall) {
+                Write-Log "-> Modifications for $AppID after uninstall are being applied..." "Yellow"
+                & "$ModsUninstall"
+                #Remove mods if deployed from app install
+                $ModsInstall = Test-ModsInstall $AppID
+                if (($ModsInstall -like "*$AppID-install*") -or ($ModsInstall -like "*$AppID-upgrade.*")) {
+                    Remove-WAUMods $AppID
+                }
+            }
+            else {
+                #Check if an uninstall mod already exist
+                $ModsUninstall = "$WAUInstallLocation\mods\$AppID-uninstall.ps1"
+                if (Test-Path "$ModsUninstall") {
+                    Write-Log "-> Modifications for $AppID after uninstall are being applied..." "Yellow"
+                    & "$ModsUninstall"
+                }
             }
             #Remove from WAU White List if set
             if ($WAUWhiteList) {
