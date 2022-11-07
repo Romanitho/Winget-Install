@@ -280,8 +280,7 @@ function Uninstall-App ($AppID, $AppArgs) {
                 Write-Log "-> Modifications for $AppID after uninstall are being applied..." "Yellow"
                 & "$ModsUninstall"
                 #Remove mods if deployed from app install
-                $ModsInstall = Test-ModsInstall $AppID
-                if (($ModsInstall -like "*$AppID-install*") -or ($ModsInstall -like "*$AppID-upgrade.*")) {
+                if ((Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1")) {
                     Remove-WAUMods $AppID
                 }
             }
@@ -291,6 +290,10 @@ function Uninstall-App ($AppID, $AppArgs) {
                 if (Test-Path "$ModsUninstall") {
                     Write-Log "-> Modifications for $AppID after uninstall are being applied..." "Yellow"
                     & "$ModsUninstall"
+                }
+                #Remove mods if deployed from app install
+                if ((Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1")) {
+                    Remove-WAUMods $AppID
                 }
             }
             #Remove from WAU White List if set
@@ -353,7 +356,7 @@ function Remove-WAUMods ($AppID) {
     if (Test-Path "$Mods\$AppID*") {
         Write-Log "-> Remove $AppID modifications from WAU 'mods'"
         #Remove mods
-        Remove-Item -Path "$Mods\$AppID*" -Force
+        Remove-Item -Path "$Mods\$AppID*" -Exclude "*-uninstall*"-Force
     }
 }
 
