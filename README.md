@@ -42,8 +42,8 @@ but most of the time, winget does not manage silent uninstall correcty.
 
 ## Custom (Mods)
 
-The Mods feature allows you to run additional scripts when installing, upgrading or uninstalling an app.
-Just put the script with the App ID followed by the suffix to be considered (`AppID-install-once.ps1`, `AppID-install.ps1`, `AppID-upgrade.ps1`, `AppID-uninstall.ps1` or `AppID-uninstalled.ps1`) and put this in the Mods directory  
+The Mods feature allows you to run additional scripts when installing, upgrading or uninstalling an app.  
+Just put the script with the App ID followed by the suffix to be considered (`AppID-install-once.ps1`, `AppID-install.ps1`, `AppID-upgrade.ps1`, `AppID-uninstall.ps1` or `AppID-uninstalled.ps1`) in the Mods directory.  
 `AppID-install-once.ps1` overrides `AppID-install.ps1` overrides `AppID-upgrade.ps1`
 > Example:  
 > If you want to run a script during uninstall (wait for process etc.), name your script like this: `AppID-uninstall.ps1`  
