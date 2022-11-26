@@ -187,6 +187,13 @@ function Confirm-Exist ($AppID) {
 
 #Check if modifications exist in "mods" directory
 function Test-ModsInstall ($AppID) {
+
+    #Takes care of a null situation
+    $ModsPreInstall = $null
+    $ModsInstallOnce = $null
+    $ModsInstall = $null
+    $ModsUpgrade = $null
+
     if (Test-Path "$PSScriptRoot\mods\$AppID-preinstall.ps1") {
         $ModsPreInstall = "$PSScriptRoot\mods\$AppID-preinstall.ps1"
     }
@@ -203,9 +210,7 @@ function Test-ModsInstall ($AppID) {
         $ModsUpgrade = "$PSScriptRoot\mods\$AppID-upgrade.ps1"
         return $ModsPreInstall, $ModsUpgrade
     }
-    else {
-        return 0
-    }
+    return $ModsPreInstall
 }
 
 function Test-ModsUninstall ($AppID) {
@@ -222,19 +227,19 @@ function Test-ModsUninstall ($AppID) {
 function Install-App ($AppID, $AppArgs) {
     $IsInstalled = Confirm-Install $AppID
     if (!($IsInstalled)) {
-        #Install App
-        Write-Log "-> Installing $AppID..." "Yellow"
-        $WingetArgs = "install --id $AppID -e --accept-package-agreements --accept-source-agreements -h $AppArgs" -split " "
-        Write-Log "-> Running: `"$Winget`" $WingetArgs"
-
         #Check if mods exist for preinstall/install/upgrade
-        $ModsPreInstall, $ModsInstall = Test-ModsInstall $AppID
+        $ModsPreInstall, $ModsInstall = Test-ModsInstall $($AppID)
 
         #If PreInstall script exist
         if ($ModsPreInstall) {
             Write-Log "-> Modifications for $AppID before upgrade are being applied..." "Yellow"
             & "$ModsPreInstall"
         }
+
+        #Install App
+        Write-Log "-> Installing $AppID..." "Yellow"
+        $WingetArgs = "install --id $AppID -e --accept-package-agreements --accept-source-agreements -h $AppArgs" -split " "
+        Write-Log "-> Running: `"$Winget`" $WingetArgs"
 
         & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
 
