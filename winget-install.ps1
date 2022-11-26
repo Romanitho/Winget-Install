@@ -230,6 +230,11 @@ function Install-App ($AppID, $AppArgs) {
         #Check if mods exist for preinstall/install/upgrade
         $ModsPreInstall, $ModsInstall = Test-ModsInstall $($AppID)
 
+        #Check if an preinstall mod already exist
+        if (!($ModsPreInstall) -and (Test-Path "$WAUInstallLocation\mods\$AppID-preinstall.ps1")) {
+            $ModsPreInstall = "$WAUInstallLocation\mods\$AppID-preinstall.ps1"
+        }
+
         #If PreInstall script exist
         if ($ModsPreInstall) {
             Write-Log "-> Modifications for $AppID before upgrade are being applied..." "Yellow"
