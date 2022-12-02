@@ -273,7 +273,7 @@ function Install-App ($AppID, $AppArgs) {
                 #Check if an installed/upgraded mod already exist
                 $ModsInstalled = "$WAUInstallLocation\mods\$AppID-installed.ps1"
                 if (Test-Path "$ModsInstalled") {
-                    Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
+                    Write-Log "-> Modifications for $AppID after install/upgrade are being applied..." "Yellow"
                     & "$ModsInstalled"
                 }
             }
