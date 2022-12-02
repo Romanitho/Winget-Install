@@ -230,7 +230,7 @@ function Install-App ($AppID, $AppArgs) {
 
         #If PreInstall script exist
         if ($ModsPreInstall) {
-            Write-Log "-> Modifications for $AppID before upgrade are being applied..." "Yellow"
+            Write-Log "-> Modifications for $AppID before install are being applied..." "Yellow"
             & "$ModsPreInstall"
         }
 
@@ -243,7 +243,7 @@ function Install-App ($AppID, $AppArgs) {
 
         #If install/upgrade script exist
         if ($ModsInstall) {
-            Write-Log "-> Modifications for $AppID during install/upgrade are being applied..." "Yellow"
+            Write-Log "-> Modifications for $AppID during install are being applied..." "Yellow"
             & "$ModsInstall"
         }
         else {
@@ -264,7 +264,7 @@ function Install-App ($AppID, $AppArgs) {
             Write-Log "-> $AppID successfully installed." "Green"
             #Check if an installed/upgraded mod exist
             if ($ModsInstalled) {
-                Write-Log "-> Modifications for $AppID after install/upgrade are being applied..." "Yellow"
+                Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
                 & "$ModsInstalled"
                 #Add mods if deployed from app install
                 Add-WAUMods $AppID
@@ -273,7 +273,7 @@ function Install-App ($AppID, $AppArgs) {
                 #Check if an installed/upgraded mod already exist
                 $ModsInstalled = "$WAUInstallLocation\mods\$AppID-installed.ps1"
                 if (Test-Path "$ModsInstalled") {
-                    Write-Log "-> Modifications for $AppID after install/upgrade are being applied..." "Yellow"
+                    Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
                     & "$ModsInstalled"
                 }
             }
