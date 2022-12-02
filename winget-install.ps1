@@ -220,7 +220,7 @@ function Test-ModsUninstall ($AppID) {
 function Install-App ($AppID, $AppArgs) {
     $IsInstalled = Confirm-Install $AppID
     if (!($IsInstalled)) {
-        #Check if mods exist for preinstall/install/upgrade/installed
+        #Check if mods exist for preinstall/install/installed
         $ModsPreInstall, $ModsInstallOnce, $ModsInstall, $ModsInstalled = Test-ModsInstall $($AppID)
 
         #Check if an preinstall mod already exist
@@ -234,7 +234,7 @@ function Install-App ($AppID, $AppArgs) {
             & "$ModsPreInstall"
         }
 
-        #Install/Upgrade App
+        #Install App
         Write-Log "-> Installing $AppID..." "Yellow"
         $WingetArgs = "install --id $AppID -e --accept-package-agreements --accept-source-agreements -h $AppArgs" -split " "
         Write-Log "-> Running: `"$Winget`" $WingetArgs"
@@ -247,13 +247,13 @@ function Install-App ($AppID, $AppArgs) {
             & "$ModsInstall"
         }
         else {
-            #Check if an install/upgrade mod already exist
+            #Check if an install mod already exist
             if (Test-Path "$WAUInstallLocation\mods\$AppID-install.ps1") {
                 $ModsInstall = "$WAUInstallLocation\mods\$AppID-install.ps1"
                 if (Test-Path "$WAUInstallLocation\mods\$AppID-upgrade.ps1") {
                     $ModsInstall = "$WAUInstallLocation\mods\$AppID-upgrade.ps1"
                 }
-                Write-Log "-> Modifications for $AppID during install/upgrade are being applied..." "Yellow"
+                Write-Log "-> Modifications for $AppID during install are being applied..." "Yellow"
                 & "$ModsInstall"
             }
         }
@@ -270,7 +270,7 @@ function Install-App ($AppID, $AppArgs) {
                 Add-WAUMods $AppID
             }
             else {
-                #Check if an installed/upgraded mod already exist
+                #Check if an installed mod already exist
                 $ModsInstalled = "$WAUInstallLocation\mods\$AppID-installed.ps1"
                 if (Test-Path "$ModsInstalled") {
                     Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
