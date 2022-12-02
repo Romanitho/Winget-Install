@@ -241,7 +241,7 @@ function Install-App ($AppID, $AppArgs) {
 
         & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
 
-        #If install/upgrade script exist
+        #If install script exist
         if ($ModsInstall) {
             Write-Log "-> Modifications for $AppID during install are being applied..." "Yellow"
             & "$ModsInstall"
@@ -262,7 +262,7 @@ function Install-App ($AppID, $AppArgs) {
         $IsInstalled = Confirm-Install $AppID
         if ($IsInstalled) {
             Write-Log "-> $AppID successfully installed." "Green"
-            #Check if an installed/upgraded mod exist
+            #Check if an installed mod exist
             if ($ModsInstalled) {
                 Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
                 & "$ModsInstalled"
