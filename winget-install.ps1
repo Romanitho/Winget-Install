@@ -241,8 +241,11 @@ function Install-App ($AppID, $AppArgs) {
 
         & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
 
-        #If install script exist
-        if ($ModsInstall) {
+        if ($ModsInstallOnce) {
+            Write-Log "-> Modifications for $AppID during install (one time) are being applied..." "Yellow"
+            & "$ModsInstallOnce"
+        }
+        elseif ($ModsInstall) {
             Write-Log "-> Modifications for $AppID during install are being applied..." "Yellow"
             & "$ModsInstall"
         }
