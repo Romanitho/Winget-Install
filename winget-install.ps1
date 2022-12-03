@@ -193,9 +193,6 @@ function Test-ModsInstall ($AppID) {
     if (Test-Path "$PSScriptRoot\mods\$AppID-install-once.ps1") {
         $ModsInstallOnce = "$PSScriptRoot\mods\$AppID-install-once.ps1"
     }
-    if (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1") {
-        $ModsInstall = "$PSScriptRoot\mods\$AppID-upgrade.ps1"
-    }
     if (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") {
         $ModsInstall = "$PSScriptRoot\mods\$AppID-install.ps1"
     }
@@ -249,14 +246,9 @@ function Install-App ($AppID, $AppArgs) {
             Write-Log "-> Modifications for $AppID during install are being applied..." "Yellow"
             & "$ModsInstall"
         }
-        else {
+        elseif (Test-Path "$WAUInstallLocation\mods\$AppID-install.ps1") {
             #Check if an install mod already exist
-            if (Test-Path "$WAUInstallLocation\mods\$AppID-upgrade.ps1") {
-                $ModsInstall = "$WAUInstallLocation\mods\$AppID-upgrade.ps1"
-            }
-            if (Test-Path "$WAUInstallLocation\mods\$AppID-install.ps1") {
-                $ModsInstall = "$WAUInstallLocation\mods\$AppID-install.ps1"
-            }
+            $ModsInstall = "$WAUInstallLocation\mods\$AppID-install.ps1"
             Write-Log "-> Modifications for $AppID during install are being applied..." "Yellow"
             & "$ModsInstall"
         }
@@ -327,7 +319,7 @@ function Uninstall-App ($AppID, $AppArgs) {
                 Write-Log "-> Modifications for $AppID after uninstall are being applied..." "Yellow"
                 & "$ModsUninstalled"
                 #Remove mods if deployed from app install
-                if ((Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1")) {
+                if ((Test-Path "$PSScriptRoot\mods\$AppID-preinstall.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1")) {
                     Remove-WAUMods $AppID
                 }
             }
@@ -339,7 +331,7 @@ function Uninstall-App ($AppID, $AppArgs) {
                     & "$ModsUninstalled"
                 }
                 #Remove mods if deployed from app install
-                if ((Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1")) {
+                if ((Test-Path "$PSScriptRoot\mods\$AppID-preinstall.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1")) {
                     Remove-WAUMods $AppID
                 }
             }
