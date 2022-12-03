@@ -43,14 +43,22 @@ but most of the time, winget does not manage silent uninstall correcty.
 ## Custom (Mods)
 
 The Mods feature allows you to run additional scripts before/when/after installing, upgrading or uninstalling an app.  
-Just put the script with the App ID followed by the suffix to be considered (`AppID-preinstall.ps1`, `AppID-install-once.ps1`, `AppID-install.ps1`, `AppID-upgrade.ps1`, `AppID-uninstall.ps1` or `AppID-uninstalled.ps1`) in the Mods directory.  
-`AppID-install-once.ps1` overrides `AppID-install.ps1` overrides `AppID-upgrade.ps1`
-> Example:  
-> If you want to run a script before the winget installation, name your script like this: `AppID-preinstall.ps1`  
-> If you want to run a script during uninstall (wait for process etc.), name your script like this: `AppID-uninstall.ps1`  
-> If you want to run a script after the uninstall has been confirmed, name your script like this: `AppID-uninstalled.ps1`  
+Just put the script with the App ID followed by the suffix to be considered in the Mods directory:  
+`AppID-preinstall.ps1`, `AppID-install-once.ps1`, `AppID-install.ps1`, `AppID-upgrade.ps1`, `AppID-installed.ps1`, `AppID-uninstall.ps1` or `AppID-uninstalled.ps1`  
 
-If your using WAU (Winget-AutoUpdate) `AppID-preinstall.ps1`, `AppID-install.ps1` and `AppID-upgrade.ps1` gets copied to the WAU mods directory and runs when upgrading apps.
+`AppID-install-once.ps1` overrides `AppID-install.ps1` (overrides `AppID-upgrade.ps1` in WAU)  
+
+> Example:  
+> Runs before install: `AppID-preinstall.ps1`  
+> Runs during install (before install check): `AppID-install-once.ps1`  
+> Runs during install (before install check): `AppID-install.ps1`  
+> Runs after install has been confirmed: `AppID-installed.ps1`  
+> Runs during uninstall (before uninstall check): `AppID-uninstall.ps1`  
+> Runs after uninstall has been confirmed: `AppID-uninstalled.ps1`  
+
+If your using WAU (Winget-AutoUpdate) `AppID-preinstall.ps1`, `AppID-install.ps1`, `AppID-upgrade.ps1` and `AppID-installed.ps1` gets copied to the WAU mods directory and runs when upgrading apps.  
+`AppID-install-once.ps1` only runs from Winget-Install and doesn't get copied to the WAU mods directory.  
+
 They are deleted on an uninstall (if not externally managed).
 
 ## Other ideas and approaches
