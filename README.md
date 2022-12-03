@@ -56,7 +56,8 @@ Just put the script with the App ID followed by the suffix to be considered in t
 > Runs during uninstall (before uninstall check): `AppID-uninstall.ps1`  
 > Runs after uninstall has been confirmed: `AppID-uninstalled.ps1`  
 
-If your using WAU (Winget-AutoUpdate) `AppID-preinstall.ps1`, `AppID-install.ps1`, `AppID-upgrade.ps1` and `AppID-installed.ps1` gets copied to the WAU mods directory and runs when upgrading apps.  
+If your using WAU (Winget-AutoUpdate) `AppID-preinstall.ps1`, `AppID-install.ps1`, `AppID-upgrade.ps1` and `AppID-installed.ps1` get copied to the WAU mods directory and runs when upgrading apps.  
+
 `AppID-install-once.ps1` only runs from Winget-Install and doesn't get copied to the WAU mods directory.  
 
 They are deleted on an uninstall (if not externally managed).
