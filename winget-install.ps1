@@ -190,14 +190,14 @@ function Test-ModsInstall ($AppID) {
     if (Test-Path "$PSScriptRoot\mods\$AppID-preinstall.ps1") {
         $ModsPreInstall = "$PSScriptRoot\mods\$AppID-preinstall.ps1"
     }
-    elseif (Test-Path "$WAUInstallLocation\mods\$AppID-preinstall.ps1") {
+    elseif (($WAUInstallLocation) -and (Test-Path "$WAUInstallLocation\mods\$AppID-preinstall.ps1")) {
         $ModsPreInstall = "$WAUInstallLocation\mods\$AppID-preinstall.ps1"
     }
 
     if (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") {
         $ModsInstall = "$PSScriptRoot\mods\$AppID-install.ps1"
     }
-    elseif (Test-Path "$WAUInstallLocation\mods\$AppID-install.ps1") {
+    elseif (($WAUInstallLocation) -and (Test-Path "$WAUInstallLocation\mods\$AppID-install.ps1")) {
         $ModsInstall = "$WAUInstallLocation\mods\$AppID-install.ps1"
     }
 
@@ -208,7 +208,7 @@ function Test-ModsInstall ($AppID) {
     if (Test-Path "$PSScriptRoot\mods\$AppID-installed.ps1") {
         $ModsInstalled = "$PSScriptRoot\mods\$AppID-installed.ps1"
     }
-    elseif (Test-Path "$WAUInstallLocation\mods\$AppID-installed.ps1") {
+    elseif (($WAUInstallLocation) -and (Test-Path "$WAUInstallLocation\mods\$AppID-installed.ps1")) {
         $ModsInstalled = "$WAUInstallLocation\mods\$AppID-installed.ps1"
     }
     
@@ -220,21 +220,21 @@ function Test-ModsUninstall ($AppID) {
     if (Test-Path "$PSScriptRoot\mods\$AppID-preuninstall.ps1") {
         $ModsPreUninstall = "$PSScriptRoot\mods\$AppID-preuninstall.ps1"
     }
-    elseif (Test-Path "$WAUInstallLocation\mods\$AppID-preuninstall.ps1") {
+    elseif (($WAUInstallLocation) -and (Test-Path "$WAUInstallLocation\mods\$AppID-preuninstall.ps1")) {
         $ModsPreUninstall = "$WAUInstallLocation\mods\$AppID-preuninstall.ps1"
     }
 
     if (Test-Path "$PSScriptRoot\mods\$AppID-uninstall.ps1") {
         $ModsUninstall = "$PSScriptRoot\mods\$AppID-uninstall.ps1"
     }
-    elseif (Test-Path "$WAUInstallLocation\mods\$AppID-uninstall.ps1") {
+    elseif (($WAUInstallLocation) -and (Test-Path "$WAUInstallLocation\mods\$AppID-uninstall.ps1")) {
         $ModsUninstall = "$WAUInstallLocation\mods\$AppID-uninstall.ps1"
     }
 
     if (Test-Path "$PSScriptRoot\mods\$AppID-uninstalled.ps1") {
         $ModsUninstalled = "$PSScriptRoot\mods\$AppID-uninstalled.ps1"
     }
-    elseif (Test-Path "$WAUInstallLocation\mods\$AppID-uninstalled.ps1") {
+    elseif (($WAUInstallLocation) -and (Test-Path "$WAUInstallLocation\mods\$AppID-uninstalled.ps1")) {
         $ModsUninstalled = "$WAUInstallLocation\mods\$AppID-uninstalled.ps1"
     }
 
