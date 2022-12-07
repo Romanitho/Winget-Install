@@ -185,59 +185,72 @@ function Confirm-Exist ($AppID) {
     }
 }
 
-#Check if modifications exist in "mods" directory
+#Check if install modifications exist in "mods" directory
 function Test-ModsInstall ($AppID) {
-
-    #Takes care of a null situation
-    $ModsPreInstall = $null
-    $ModsInstallOnce = $null
-    $ModsInstall = $null
-    $ModsUpgrade = $null
-
     if (Test-Path "$PSScriptRoot\mods\$AppID-preinstall.ps1") {
         $ModsPreInstall = "$PSScriptRoot\mods\$AppID-preinstall.ps1"
     }
+    elseif (($WAUInstallLocation) -and (Test-Path "$WAUInstallLocation\mods\$AppID-preinstall.ps1")) {
+        $ModsPreInstall = "$WAUInstallLocation\mods\$AppID-preinstall.ps1"
+    }
 
-    if (Test-Path "$PSScriptRoot\mods\$AppID-install-once.ps1") {
-        $ModsInstallOnce = "$PSScriptRoot\mods\$AppID-install-once.ps1"
-        return $ModsPreInstall, $ModsInstallOnce
-    }
-    elseif (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") {
+    if (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") {
         $ModsInstall = "$PSScriptRoot\mods\$AppID-install.ps1"
-        return $ModsPreInstall, $ModsInstall
     }
-    elseif (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1") {
-        $ModsUpgrade = "$PSScriptRoot\mods\$AppID-upgrade.ps1"
-        return $ModsPreInstall, $ModsUpgrade
+    elseif (($WAUInstallLocation) -and (Test-Path "$WAUInstallLocation\mods\$AppID-install.ps1")) {
+        $ModsInstall = "$WAUInstallLocation\mods\$AppID-install.ps1"
     }
-    return $ModsPreInstall
+
+    if (Test-Path "$PSScriptRoot\mods\$AppID-installed-once.ps1") {
+        $ModsInstalledOnce = "$PSScriptRoot\mods\$AppID-installed-once.ps1"
+    }
+
+    if (Test-Path "$PSScriptRoot\mods\$AppID-installed.ps1") {
+        $ModsInstalled = "$PSScriptRoot\mods\$AppID-installed.ps1"
+    }
+    elseif (($WAUInstallLocation) -and (Test-Path "$WAUInstallLocation\mods\$AppID-installed.ps1")) {
+        $ModsInstalled = "$WAUInstallLocation\mods\$AppID-installed.ps1"
+    }
+    
+    return $ModsPreInstall, $ModsInstall, $ModsInstalledOnce, $ModsInstalled 
 }
 
+#Check if uninstall modifications exist in "mods" directory
 function Test-ModsUninstall ($AppID) {
+    if (Test-Path "$PSScriptRoot\mods\$AppID-preuninstall.ps1") {
+        $ModsPreUninstall = "$PSScriptRoot\mods\$AppID-preuninstall.ps1"
+    }
+    elseif (($WAUInstallLocation) -and (Test-Path "$WAUInstallLocation\mods\$AppID-preuninstall.ps1")) {
+        $ModsPreUninstall = "$WAUInstallLocation\mods\$AppID-preuninstall.ps1"
+    }
+
     if (Test-Path "$PSScriptRoot\mods\$AppID-uninstall.ps1") {
         $ModsUninstall = "$PSScriptRoot\mods\$AppID-uninstall.ps1"
     }
+    elseif (($WAUInstallLocation) -and (Test-Path "$WAUInstallLocation\mods\$AppID-uninstall.ps1")) {
+        $ModsUninstall = "$WAUInstallLocation\mods\$AppID-uninstall.ps1"
+    }
+
     if (Test-Path "$PSScriptRoot\mods\$AppID-uninstalled.ps1") {
         $ModsUninstalled = "$PSScriptRoot\mods\$AppID-uninstalled.ps1"
     }
-    return $ModsUninstall, $ModsUninstalled
+    elseif (($WAUInstallLocation) -and (Test-Path "$WAUInstallLocation\mods\$AppID-uninstalled.ps1")) {
+        $ModsUninstalled = "$WAUInstallLocation\mods\$AppID-uninstalled.ps1"
+    }
+
+    return $ModsPreUninstall, $ModsUninstall, $ModsUninstalled
 }
 
 #Install function
 function Install-App ($AppID, $AppArgs) {
     $IsInstalled = Confirm-Install $AppID
     if (!($IsInstalled)) {
-        #Check if mods exist for preinstall/install/upgrade
-        $ModsPreInstall, $ModsInstall = Test-ModsInstall $($AppID)
-
-        #Check if an preinstall mod already exist
-        if (!($ModsPreInstall) -and (Test-Path "$WAUInstallLocation\mods\$AppID-preinstall.ps1")) {
-            $ModsPreInstall = "$WAUInstallLocation\mods\$AppID-preinstall.ps1"
-        }
+        #Check if mods exist (or already exist) for preinstall/install/installedonce/installed
+        $ModsPreInstall, $ModsInstall, $ModsInstalledOnce, $ModsInstalled = Test-ModsInstall $($AppID)
 
         #If PreInstall script exist
         if ($ModsPreInstall) {
-            Write-Log "-> Modifications for $AppID before upgrade are being applied..." "Yellow"
+            Write-Log "-> Modifications for $AppID before install are being applied..." "Yellow"
             & "$ModsPreInstall"
         }
 
@@ -245,30 +258,32 @@ function Install-App ($AppID, $AppArgs) {
         Write-Log "-> Installing $AppID..." "Yellow"
         $WingetArgs = "install --id $AppID -e --accept-package-agreements --accept-source-agreements -h $AppArgs" -split " "
         Write-Log "-> Running: `"$Winget`" $WingetArgs"
-
         & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
+
+        if ($ModsInstall) {
+            Write-Log "-> Modifications for $AppID during install are being applied..." "Yellow"
+            & "$ModsInstall"
+        }
 
         #Check if install is ok
         $IsInstalled = Confirm-Install $AppID
         if ($IsInstalled) {
             Write-Log "-> $AppID successfully installed." "Green"
-            #Check if an install/upgrade mod exist
-            if (($ModsInstall -like "*$AppID-install*") -or ($ModsInstall -like "*$AppID-upgrade*")) {
-                if ($ModsInstall -like "*$AppID-install*") {
-                    Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
-                    & "$ModsInstall"
-                }
-                #Add mods if deployed from app install
+
+            if ($ModsInstalledOnce) {
+                Write-Log "-> Modifications for $AppID after install (one time) are being applied..." "Yellow"
+                & "$ModsInstalledOnce"
+            }
+            elseif ($ModsInstalled) {
+                Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
+                & "$ModsInstalled"
+            }
+
+            #Add mods if deployed from Winget-Install
+            if ((Test-Path "$PSScriptRoot\mods\$AppID-preinstall.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-installed.ps1")) {
                 Add-WAUMods $AppID
             }
-            else {
-                #Check if an install mod already exist
-                $ModsInstall = "$WAUInstallLocation\mods\$AppID-install.ps1"
-                if (Test-Path "$ModsInstall") {
-                    Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
-                    & "$ModsInstall"
-                }
-            }
+
             #Add to WAU White List if set
             if ($WAUWhiteList) {
                 Add-WAUWhiteList $AppID
@@ -287,25 +302,24 @@ function Install-App ($AppID, $AppArgs) {
 function Uninstall-App ($AppID, $AppArgs) {
     $IsInstalled = Confirm-Install $AppID
     if ($IsInstalled) {
+        #Check if mods exist (or already exist) for preuninstall/uninstall/uninstalled
+        $ModsPreUninstall, $ModsUninstall, $ModsUninstalled = Test-ModsUninstall $AppID
+
+        #If PreUninstall script exist
+        if ($ModsPreUninstall) {
+            Write-Log "-> Modifications for $AppID before uninstall are being applied..." "Yellow"
+            & "$ModsPreUninstall"
+        }
+
         #Uninstall App
         Write-Log "-> Uninstalling $AppID..." "Yellow"
         $WingetArgs = "uninstall --id $AppID -e --accept-source-agreements -h" -split " "
         Write-Log "-> Running: `"$Winget`" $WingetArgs"
         & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
 
-        #Check if mods exist
-        $ModsUninstall, $ModsUninstalled = Test-ModsUninstall $AppID
         if ($ModsUninstall) {
             Write-Log "-> Modifications for $AppID during uninstall are being applied..." "Yellow"
             & "$ModsUninstall"
-        }
-        else {
-            #Check if an uninstall mod already exist
-            $ModsUninstall = "$WAUInstallLocation\mods\$AppID-uninstall.ps1"
-            if (Test-Path "$ModsUninstall") {
-                Write-Log "-> Modifications for $AppID during uninstall are being applied..." "Yellow"
-                & "$ModsUninstall"
-            }
         }
         
         #Check if uninstall is ok
@@ -315,23 +329,13 @@ function Uninstall-App ($AppID, $AppArgs) {
             if ($ModsUninstalled) {
                 Write-Log "-> Modifications for $AppID after uninstall are being applied..." "Yellow"
                 & "$ModsUninstalled"
-                #Remove mods if deployed from app install
-                if ((Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1")) {
-                    Remove-WAUMods $AppID
-                }
             }
-            else {
-                #Check if an uninstalled mod already exist
-                $ModsUninstalled = "$WAUInstallLocation\mods\$AppID-uninstalled.ps1"
-                if (Test-Path "$ModsUninstalled") {
-                    Write-Log "-> Modifications for $AppID after uninstall are being applied..." "Yellow"
-                    & "$ModsUninstalled"
-                }
-                #Remove mods if deployed from app install
-                if ((Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1")) {
-                    Remove-WAUMods $AppID
-                }
+
+            #Remove mods if deployed from Winget-Install
+            if ((Test-Path "$PSScriptRoot\mods\$AppID-preinstall.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-installed.ps1")) {
+                Remove-WAUMods $AppID
             }
+
             #Remove from WAU White List if set
             if ($WAUWhiteList) {
                 Remove-WAUWhiteList $AppID
@@ -378,10 +382,8 @@ function Add-WAUMods ($AppID) {
     $Mods = "$WAUInstallLocation\mods"
     if (Test-Path $Mods) {
         #Add mods
-        if ((Test-Path "$PSScriptRoot\mods\$AppID-preinstall.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-install.ps1") -or (Test-Path "$PSScriptRoot\mods\$AppID-upgrade.ps1")) {
-            Write-Log "-> Add modifications for $AppID to WAU 'mods'"
-            Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*-install-once*", "*-uninstall*" -Force
-        }
+        Write-Log "-> Add modifications for $AppID to WAU 'mods'"
+        Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*installed-once*", "*uninstall*" -Force
     }
 }
 
@@ -392,7 +394,7 @@ function Remove-WAUMods ($AppID) {
     if (Test-Path "$Mods\$AppID*") {
         Write-Log "-> Remove $AppID modifications from WAU 'mods'"
         #Remove mods
-        Remove-Item -Path "$Mods\$AppID*" -Exclude "*-uninstall*"-Force
+        Remove-Item -Path "$Mods\$AppID-*" -Exclude "*uninstall*" -Force
     }
 }
 
