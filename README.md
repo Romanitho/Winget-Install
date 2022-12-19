@@ -25,9 +25,10 @@ Details: https://github.com/Romanitho/Winget-Install/discussions/20
 `powershell.exe -Executionpolicy Bypass -Command .\winget-install.ps1 -AppIDs "7zip.7zip, Notepad++.Notepad++"`
 
 ## Detection method
-- Use the "winget-detect.ps1" with SCCM or Intune as detection method.
-- Replace "$AppToDetect" value by your App ID  
-`$AppToDetect = "Notepad++.Notepad++"`
+- To detect an app, you can use:
+`powershell.exe -ExecutionPolicy bypass -File winget-install.ps1 -AppIDs Notepad++.Notepad++ -Detect`
+It returns `Installed!` if the AppId is detected.
+If multiple AppIds are provided, it returns `Installed!` only, if all AppIds are detected.
 
 ## Updates
 https://github.com/Romanitho/Winget-autoupdate

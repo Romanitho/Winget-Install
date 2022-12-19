@@ -4,7 +4,7 @@ Install apps with Winget through Intune or SCCM.
 Can be used standalone.
 
 .DESCRIPTION
-Allow to run Winget in System Context to install your apps.
+Allows to run Winget in System Context to install your apps.
 https://github.com/Romanitho/Winget-Install
 
 .PARAMETER AppIDs
@@ -12,6 +12,9 @@ Forward Winget App ID to install. For multiple apps, separate with ","
 
 .PARAMETER Uninstall
 To uninstall app. Works with AppIDs
+
+.PARAMETER Detect
+To detect app. Works with AppIDs.
 
 .PARAMETER LogPath
 Used to specify logpath. Default is same folder as Winget-Autoupdate project
@@ -31,14 +34,20 @@ If '-Uninstall' is used, it removes the app from WAU White List.
 
 .EXAMPLE
 .\winget-install.ps1 -AppIDs 7zip.7zip,notepad++.notepad++ -LogPath "C:\temp\logs"
+
+.EXAMPLE
+.\winget-install.ps1 -AppIDs 7zip.7zip -Detect
 #>
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $True, ParameterSetName = "AppIDs")] [String[]] $AppIDs,
-    [Parameter(Mandatory = $False)] [Switch] $Uninstall,
+    [Parameter(Mandatory = $True)] [String[]] $AppIDs,
+    [Parameter(Mandatory = $False, ParameterSetName = 'Uninstall')] [Switch] $Uninstall,
+    [Parameter(Mandatory = $False, ParameterSetName = 'Detect')] [Switch] $Detect,
     [Parameter(Mandatory = $False)] [String] $LogPath,
-    [Parameter(Mandatory = $False)] [Switch] $WAUWhiteList
+    [Parameter(Mandatory = $False, ParameterSetName = 'Install')]
+    [Parameter(Mandatory = $False, ParameterSetName = 'Uninstall')]
+    [Switch] $WAUWhiteList
 )
 
 
@@ -431,6 +440,7 @@ Add-ScopeMachine
 Get-WingetCmd
 
 #Run install or uninstall for all apps
+$IsInstalled = $True
 foreach ($App_Full in $AppIDs) {
     #Split AppID and Custom arguments
     $AppID, $AppArgs = ($App_Full.Trim().Split(" ", 2))
@@ -438,9 +448,19 @@ foreach ($App_Full in $AppIDs) {
     #Log current App
     Write-Log "Start $AppID processing..." "Blue"
 
-    #Install or Uninstall command
+    #Install, Detect, or Uninstall command
     if ($Uninstall) {
         Uninstall-App $AppID $AppArgs
+    }
+    if ($Detect) {
+        $AppId_Installed = Confirm-Install -AppID $AppID
+        if ($AppId_Installed) {
+            Write-Log "-> $AppID is already installed." "Green"
+        }
+        else {
+            Write-Log "-> $AppID is not installed." "Yellow"
+            $IsInstalled = $False
+        }
     }
     else {
         #Check if app exists on Winget Repo
@@ -459,3 +479,7 @@ foreach ($App_Full in $AppIDs) {
 
 Write-Log "###   END REQUEST   ###`n" "Magenta"
 Start-Sleep 3
+
+if ($Detect -and $IsInstalled) {
+    return "Installed!"
+}
