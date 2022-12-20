@@ -477,9 +477,10 @@ foreach ($App_Full in $AppIDs) {
 
 }
 
+if ($Detect -and $IsInstalled) {
+    Write-Output "Installed!"
+}
+
 Write-Log "###   END REQUEST   ###`n" "Magenta"
 Start-Sleep 3
 
-if ($Detect -and $IsInstalled) {
-    return "Installed!"
-}
