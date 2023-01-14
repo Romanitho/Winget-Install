@@ -42,9 +42,9 @@ but most of the time, winget does not manage silent uninstall correcty.
 
 ## Custom (Mods)
 
-The Mods feature allows you to run additional scripts before/when/after installing, upgrading or uninstalling an app.  
-Just put the script with the App ID followed by the suffix to be considered in the Mods directory:  
-`AppID-preinstall.ps1`, `AppID-upgrade.ps1`, `AppID-install.ps1`, `AppID-installed-once.ps1`, `AppID-installed.ps1`, `AppID-preuninstall.ps1`, `AppID-uninstall.ps1` or `AppID-uninstalled.ps1`  
+The **Mods feature** allows you to run additional scripts before/when/after installing or uninstalling an app.  
+Just put the script with the **AppID** followed by the suffix to be considered in the **Mods directory**:  
+**AppID**`-preinstall.ps1`, `-install.ps1`, `-installed-once.ps1`, `-installed.ps1`, `-preuninstall.ps1`, `-uninstall.ps1` or `-uninstalled.ps1`  
 
 > Example:  
 > Runs before install: `AppID-preinstall.ps1`  
@@ -55,11 +55,11 @@ Just put the script with the App ID followed by the suffix to be considered in t
 > Runs during uninstall (before uninstall check): `AppID-uninstall.ps1`  
 > Runs after uninstall has been confirmed: `AppID-uninstalled.ps1`  
 
-If your using WAU (Winget-AutoUpdate) `AppID-preinstall.ps1`, `AppID-install.ps1`, `AppID-upgrade.ps1` and `AppID-installed.ps1` get copied to the WAU mods directory and runs when upgrading apps.  
+If you're using [**WAU** (Winget-AutoUpdate)](https://github.com/Romanitho/Winget-AutoUpdate) they get copied to the **WAU mods** directory (except `-installed-once.ps1`  and `-uninstall.ps1`) and also runs when upgrading apps in **WAU**.
 
-`AppID-installed-once.ps1` runs instead of `AppID-installed.ps1` from Winget-Install and doesn't get copied to the WAU mods directory.  
+`AppID-installed-once.ps1` runs instead of `AppID-installed.ps1` from **Winget-Install** and doesn't get copied to the **WAU mods** directory.  
 
-They are deleted from WAU on an uninstall (if not externally managed).
+They are deleted from **WAU** on an uninstall (if deployed from **Winget-Install**)
 
 ## Other ideas and approaches
 https://github.com/o-l-a-v/winget-intune-win32
