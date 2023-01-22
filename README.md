@@ -57,7 +57,7 @@ Just put the script with the **AppID** followed by the suffix to be considered i
 
 If you're using [**WAU** (Winget-AutoUpdate)](https://github.com/Romanitho/Winget-AutoUpdate) they get copied to the **WAU mods** directory (except `-installed-once.ps1/-preuninstall.ps1/-uninstall.ps1/-uninstalled.ps1`) and also runs when upgrading apps in **WAU**.
 
-`AppID-installed-once.ps1` runs instead of `AppID-installed.ps1` from **Winget-Install**-.  
+`AppID-installed-once.ps1` runs instead of `AppID-installed.ps1` from **Winget-Install**.  
 
 They are deleted from **WAU** on an uninstall (if deployed from **Winget-Install**)
 
