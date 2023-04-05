@@ -15,6 +15,8 @@ Powershell scripts to install Winget Packages with SCCM/Intune (or similar) or e
 - Put this command line as Install Cmd (Must call 64 bits powershell in order to work):  
 `"%systemroot%\sysnative\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File winget-install.ps1 -AppIDs Notepad++.Notepad++`
 
+> You can also use **WingetIntunePackager** tool to package apps from a GUI: https://github.com/Romanitho/WingetIntunePackager
+
 ### Use Winget native parameters
 You can add custom parameter in your `AppIDs` argument. Don't forget to escape the quote:  
 `powershell.exe -Executionpolicy Bypass -File winget-install.ps1 -AppIDs "Citrix.Workspace --override \"/silent /noreboot /includeSSON /forceinstall\""`  
