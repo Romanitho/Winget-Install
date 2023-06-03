@@ -1,6 +1,6 @@
 #Change app to detect [Application ID]
 $AppToDetect = "Notepad++.Notepad++"
-
+$VersionToDetect = ""
 
 <# FUNCTIONS #>
 
@@ -36,6 +36,6 @@ Get-WingetCmd
 $InstalledApp = & $winget list --Id $AppToDetect --accept-source-agreements | Out-String
 
 #Return if AppID existe in the list
-if ($InstalledApp -match [regex]::Escape($AppToDetect)) {
+if ( ($InstalledApp -match [regex]::Escape($AppToDetect + " " + $VersionToDetect)) -or ($InstalledApp -match [regex]::Escape($AppToDetect) -and $VersionToDetect -eq "") ) {
     return "Installed!"
 }
