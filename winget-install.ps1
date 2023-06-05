@@ -156,24 +156,40 @@ function Add-ScopeMachine {
 }
 
 #Check if app is installed
-function Confirm-Install ($AppID) {
-    #Get "Winget List AppID"
-    $InstalledApp = & $winget list --Id $AppID -e --accept-source-agreements | Out-String
+function Confirm-Install ($AppID, $AppArgs) {
+    #Get "Winget List AppID" and remove any header information
+    $InstalledApp = & $winget list --Id $AppID -e --accept-source-agreements
+    $InstalledApp = $InstalledApp[$InstalledApp.Length-1]
+    [String]$InstalledVersion = ($InstalledApp.Split($AppID)[1]).Trim().Split(" ")[0]
 
     #Return if AppID exists in the list
-    if ($InstalledApp -match [regex]::Escape($AppID)) {
-        return $true
+    if ($InstalledApp -notmatch [regex]::Escape($AppID)) {
+       return $false 
     }
-    else {
-        return $false
+
+    if (-not ([string]::IsNullOrEmpty($AppArgs)) ) {
+        [String]$AppVersion = $AppArgs.Trim().Split(" ")[1]
+        while ($InstalledVersion.Split(".").count -ne 4) {
+            $InstalledVersion += "0"
+        }
+        while ($AppVersion.Split(".").count -ne 4) {
+            $AppVersion += ".0"
+        }
+        if ([Version]$InstalledVersion -ge [Version]$AppVersion) {
+            return $true
+        }
+        else {
+            return $false
+        }
     }
+    return $true
 }
 
 #Check if App exists in Winget Repository
 function Confirm-Exist ($AppID) {
     #Check is app exists in the winget repository
     $WingetApp = & $winget show --Id $AppID -e --accept-source-agreements | Out-String
-
+    
     #Return if AppID exists
     if ($WingetApp -match [regex]::Escape($AppID)) {
         Write-Log "-> $AppID exists on Winget Repository." "Cyan"
@@ -243,7 +259,7 @@ function Test-ModsUninstall ($AppID) {
 
 #Install function
 function Install-App ($AppID, $AppArgs) {
-    $IsInstalled = Confirm-Install $AppID
+    $IsInstalled = Confirm-Install $AppID $AppArgs
     if (!($IsInstalled)) {
         #Check if mods exist (or already exist) for preinstall/install/installedonce/installed
         $ModsPreInstall, $ModsInstall, $ModsInstalledOnce, $ModsInstalled = Test-ModsInstall $($AppID)
