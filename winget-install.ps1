@@ -160,17 +160,23 @@ function Confirm-Install ($AppID, $AppArgs) {
     #Get "Winget List AppID" and remove any header information
     $InstalledApp = & $winget list --Id $AppID -e --accept-source-agreements
     $InstalledApp = $InstalledApp[$InstalledApp.Length-1]
-    [String]$InstalledVersion = ($InstalledApp.Split($AppID)[1]).Trim().Split(" ")[0]
 
     #Return if AppID exists in the list
     if ($InstalledApp -notmatch [regex]::Escape($AppID)) {
        return $false 
     }
-
+	#Get installed app version
+    if (-not ([string]::IsNullOrEmpty($AppArgs)) ) {
+        $winget export -s winget --include-versions -o $env:TEMP\temp.json
+        $json = Get-Content -Path $env:TEMP\temp.json | ConvertFrom-Json
+        $Packages = $json.Sources[0].Packages
+        $InstalledVersion = $Packages | Where-Object {$_.PackageIdentifier -eq $AppID} | Select-Object -ExpandProperty Version
+    }
+	#Convert the version variables to correct format (22.01 -> 22.01.0.0 (Major.Minor.Build.Revision)) otherwise comparing values sometimes does not work correct due to wrong format
     if (-not ([string]::IsNullOrEmpty($AppArgs)) ) {
         [String]$AppVersion = $AppArgs.Trim().Split(" ")[1]
         while ($InstalledVersion.Split(".").count -ne 4) {
-            $InstalledVersion += "0"
+            $InstalledVersion += ".0"
         }
         while ($AppVersion.Split(".").count -ne 4) {
             $AppVersion += ".0"
