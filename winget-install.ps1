@@ -165,16 +165,18 @@ function Confirm-Install ($AppID, $AppArgs) {
     if ($InstalledApp -notmatch [regex]::Escape($AppID)) {
        return $false 
     }
-	#Get installed app version
+    #Get installed app version
     if (-not ([string]::IsNullOrEmpty($AppArgs)) ) {
-        $winget export -s winget --include-versions -o $env:TEMP\temp.json
+        & $winget export -s winget --include-versions -o $env:TEMP\temp.json
         $json = Get-Content -Path $env:TEMP\temp.json | ConvertFrom-Json
         $Packages = $json.Sources[0].Packages
         $InstalledVersion = $Packages | Where-Object {$_.PackageIdentifier -eq $AppID} | Select-Object -ExpandProperty Version
     }
-	#Convert the version variables to correct format (22.01 -> 22.01.0.0 (Major.Minor.Build.Revision)) otherwise comparing values sometimes does not work correct due to wrong format
-    if (-not ([string]::IsNullOrEmpty($AppArgs)) ) {
-        [String]$AppVersion = $AppArgs.Trim().Split(" ")[1]
+    #Convert the version variables to correct format (22.01 -> 22.01.0.0 (Major.Minor.Build.Revision)) otherwise comparing values sometimes does not work correct due to wrong format
+    if (-not ([string]::IsNullOrEmpty($AppArgs)) -and $AppArgs -match [regex]::Escape("--version") ) {
+        $AppArgs = $AppArgs.Split(" ")
+        $wordIndex = $AppArgs.IndexOf("--version")
+        [String]$AppVersion = $AppArgs[$wordIndex + 1]
         while ($InstalledVersion.Split(".").count -ne 4) {
             $InstalledVersion += ".0"
         }
