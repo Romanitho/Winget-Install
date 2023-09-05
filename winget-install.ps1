@@ -158,7 +158,7 @@ function Add-ScopeMachine {
 #Check if app is installed
 function Confirm-Install ($AppID) {
     #Get "Winget List AppID"
-    $InstalledApp = & $winget list --Id $AppID -e --accept-source-agreements | Out-String
+    $InstalledApp = & $winget list --Id $AppID -e --accept-source-agreements -s winget | Out-String
 
     #Return if AppID exists in the list
     if ($InstalledApp -match [regex]::Escape($AppID)) {
@@ -172,7 +172,7 @@ function Confirm-Install ($AppID) {
 #Check if App exists in Winget Repository
 function Confirm-Exist ($AppID) {
     #Check is app exists in the winget repository
-    $WingetApp = & $winget show --Id $AppID -e --accept-source-agreements | Out-String
+    $WingetApp = & $winget show --Id $AppID -e --accept-source-agreements -s winget | Out-String
 
     #Return if AppID exists
     if ($WingetApp -match [regex]::Escape($AppID)) {
@@ -256,7 +256,7 @@ function Install-App ($AppID, $AppArgs) {
 
         #Install App
         Write-Log "-> Installing $AppID..." "Yellow"
-        $WingetArgs = "install --id $AppID -e --accept-package-agreements --accept-source-agreements -h $AppArgs" -split " "
+        $WingetArgs = "install --id $AppID -e --accept-package-agreements --accept-source-agreements -s winget -h $AppArgs" -split " "
         Write-Log "-> Running: `"$Winget`" $WingetArgs"
         & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
 
