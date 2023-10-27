@@ -83,16 +83,16 @@ function Start-Init {
 
     #Log Header
     if ($Uninstall) {
-        Write-Log "###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW UNINSTALL REQUEST   ###" "Magenta"
+        Write-ToLog "###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW UNINSTALL REQUEST   ###" "Magenta"
     }
     else {
-        Write-Log "###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW INSTALL REQUEST   ###" "Magenta"
+        Write-ToLog "###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW INSTALL REQUEST   ###" "Magenta"
     }
 
 }
 
 #Log Function
-function Write-Log ($LogMsg, $LogColor = "White") {
+function Write-ToLog ($LogMsg, $LogColor = "White") {
     #Get log
     $Log = "$(Get-Date -UFormat "%T") - $LogMsg"
     #Echo log
@@ -119,10 +119,10 @@ function Get-WingetCmd {
         $Script:Winget = "$WingetPath\winget.exe"
     }
     else {
-        Write-Log "Winget not installed or detected !" "Red"
+        Write-ToLog "Winget not installed or detected !" "Red"
         break
     }
-    Write-Log "Using following Winget Cmd: $winget`n"
+    Write-ToLog "Using following Winget Cmd: $winget`n"
 }
 
 #Function to configure prefered scope option as Machine
@@ -176,11 +176,11 @@ function Confirm-Exist ($AppID) {
 
     #Return if AppID exists
     if ($WingetApp -match [regex]::Escape($AppID)) {
-        Write-Log "-> $AppID exists on Winget Repository." "Cyan"
+        Write-ToLog "-> $AppID exists on Winget Repository." "Cyan"
         return $true
     }
     else {
-        Write-Log "-> $AppID does not exist on Winget Repository! Check spelling." "Red"
+        Write-ToLog "-> $AppID does not exist on Winget Repository! Check spelling." "Red"
         return $false
     }
 }
@@ -211,8 +211,8 @@ function Test-ModsInstall ($AppID) {
     elseif (($WAUInstallLocation) -and (Test-Path "$WAUInstallLocation\mods\$AppID-installed.ps1")) {
         $ModsInstalled = "$WAUInstallLocation\mods\$AppID-installed.ps1"
     }
-    
-    return $ModsPreInstall, $ModsInstall, $ModsInstalledOnce, $ModsInstalled 
+
+    return $ModsPreInstall, $ModsInstall, $ModsInstalledOnce, $ModsInstalled
 }
 
 #Check if uninstall modifications exist in "mods" directory
@@ -250,32 +250,32 @@ function Install-App ($AppID, $AppArgs) {
 
         #If PreInstall script exist
         if ($ModsPreInstall) {
-            Write-Log "-> Modifications for $AppID before install are being applied..." "Yellow"
+            Write-ToLog "-> Modifications for $AppID before install are being applied..." "Yellow"
             & "$ModsPreInstall"
         }
 
         #Install App
-        Write-Log "-> Installing $AppID..." "Yellow"
+        Write-ToLog "-> Installing $AppID..." "Yellow"
         $WingetArgs = "install --id $AppID -e --accept-package-agreements --accept-source-agreements -s winget -h $AppArgs" -split " "
-        Write-Log "-> Running: `"$Winget`" $WingetArgs"
+        Write-ToLog "-> Running: `"$Winget`" $WingetArgs"
         & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
 
         if ($ModsInstall) {
-            Write-Log "-> Modifications for $AppID during install are being applied..." "Yellow"
+            Write-ToLog "-> Modifications for $AppID during install are being applied..." "Yellow"
             & "$ModsInstall"
         }
 
         #Check if install is ok
         $IsInstalled = Confirm-Install $AppID
         if ($IsInstalled) {
-            Write-Log "-> $AppID successfully installed." "Green"
+            Write-ToLog "-> $AppID successfully installed." "Green"
 
             if ($ModsInstalledOnce) {
-                Write-Log "-> Modifications for $AppID after install (one time) are being applied..." "Yellow"
+                Write-ToLog "-> Modifications for $AppID after install (one time) are being applied..." "Yellow"
                 & "$ModsInstalledOnce"
             }
             elseif ($ModsInstalled) {
-                Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
+                Write-ToLog "-> Modifications for $AppID after install are being applied..." "Yellow"
                 & "$ModsInstalled"
             }
 
@@ -290,11 +290,11 @@ function Install-App ($AppID, $AppArgs) {
             }
         }
         else {
-            Write-Log "-> $AppID installation failed!" "Red"
+            Write-ToLog "-> $AppID installation failed!" "Red"
         }
     }
     else {
-        Write-Log "-> $AppID is already installed." "Cyan"
+        Write-ToLog "-> $AppID is already installed." "Cyan"
     }
 }
 
@@ -307,27 +307,27 @@ function Uninstall-App ($AppID, $AppArgs) {
 
         #If PreUninstall script exist
         if ($ModsPreUninstall) {
-            Write-Log "-> Modifications for $AppID before uninstall are being applied..." "Yellow"
+            Write-ToLog "-> Modifications for $AppID before uninstall are being applied..." "Yellow"
             & "$ModsPreUninstall"
         }
 
         #Uninstall App
-        Write-Log "-> Uninstalling $AppID..." "Yellow"
+        Write-ToLog "-> Uninstalling $AppID..." "Yellow"
         $WingetArgs = "uninstall --id $AppID -e --accept-source-agreements -h" -split " "
-        Write-Log "-> Running: `"$Winget`" $WingetArgs"
+        Write-ToLog "-> Running: `"$Winget`" $WingetArgs"
         & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
 
         if ($ModsUninstall) {
-            Write-Log "-> Modifications for $AppID during uninstall are being applied..." "Yellow"
+            Write-ToLog "-> Modifications for $AppID during uninstall are being applied..." "Yellow"
             & "$ModsUninstall"
         }
-        
+
         #Check if uninstall is ok
         $IsInstalled = Confirm-Install $AppID
         if (!($IsInstalled)) {
-            Write-Log "-> $AppID successfully uninstalled." "Green"
+            Write-ToLog "-> $AppID successfully uninstalled." "Green"
             if ($ModsUninstalled) {
-                Write-Log "-> Modifications for $AppID after uninstall are being applied..." "Yellow"
+                Write-ToLog "-> Modifications for $AppID after uninstall are being applied..." "Yellow"
                 & "$ModsUninstalled"
             }
 
@@ -342,11 +342,11 @@ function Uninstall-App ($AppID, $AppArgs) {
             }
         }
         else {
-            Write-Log "-> $AppID uninstall failed!" "Red"
+            Write-ToLog "-> $AppID uninstall failed!" "Red"
         }
     }
     else {
-        Write-Log "-> $AppID is not installed." "Cyan"
+        Write-ToLog "-> $AppID is not installed." "Cyan"
     }
 }
 
@@ -355,7 +355,7 @@ function Add-WAUWhiteList ($AppID) {
     #Check if WAU default intall path exists
     $WhiteList = "$WAUInstallLocation\included_apps.txt"
     if (Test-Path $WhiteList) {
-        Write-Log "-> Add $AppID to WAU included_apps.txt"
+        Write-ToLog "-> Add $AppID to WAU included_apps.txt"
         #Add App to "included_apps.txt"
         Add-Content -path $WhiteList -Value "`n$AppID" -Force
         #Remove duplicate and blank lines
@@ -369,7 +369,7 @@ function Remove-WAUWhiteList ($AppID) {
     #Check if WAU default intall path exists
     $WhiteList = "$WAUInstallLocation\included_apps.txt"
     if (Test-Path $WhiteList) {
-        Write-Log "-> Remove $AppID from WAU included_apps.txt"
+        Write-ToLog "-> Remove $AppID from WAU included_apps.txt"
         #Remove app from list
         $file = Get-Content $WhiteList | Where-Object { $_ -ne "$AppID" }
         $file | Out-File $WhiteList
@@ -382,7 +382,7 @@ function Add-WAUMods ($AppID) {
     $Mods = "$WAUInstallLocation\mods"
     if (Test-Path $Mods) {
         #Add mods
-        Write-Log "-> Add modifications for $AppID to WAU 'mods'"
+        Write-ToLog "-> Add modifications for $AppID to WAU 'mods'"
         Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*installed-once*", "*uninstall*" -Force
     }
 }
@@ -392,7 +392,7 @@ function Remove-WAUMods ($AppID) {
     #Check if WAU default install path exists
     $Mods = "$WAUInstallLocation\mods"
     if (Test-Path "$Mods\$AppID*") {
-        Write-Log "-> Remove $AppID modifications from WAU 'mods'"
+        Write-ToLog "-> Remove $AppID modifications from WAU 'mods'"
         #Remove mods
         Remove-Item -Path "$Mods\$AppID-*" -Exclude "*uninstall*" -Force
     }
@@ -436,7 +436,7 @@ foreach ($App_Full in $AppIDs) {
     $AppID, $AppArgs = ($App_Full.Trim().Split(" ", 2))
 
     #Log current App
-    Write-Log "Start $AppID processing..." "Blue"
+    Write-ToLog "Start $AppID processing..." "Blue"
 
     #Install or Uninstall command
     if ($Uninstall) {
@@ -452,10 +452,10 @@ foreach ($App_Full in $AppIDs) {
     }
 
     #Log current App
-    Write-Log "$AppID processing finished!`n" "Blue"
+    Write-ToLog "$AppID processing finished!`n" "Blue"
     Start-Sleep 1
 
 }
 
-Write-Log "###   END REQUEST   ###`n" "Magenta"
+Write-ToLog "###   END REQUEST   ###`n" "Magenta"
 Start-Sleep 3
