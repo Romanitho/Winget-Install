@@ -8,7 +8,7 @@ Allow to run Winget in System Context to install your apps.
 https://github.com/Romanitho/Winget-Install
 
 .PARAMETER AppIDs
-Forward Winget App ID to install. For multiple apps, separate with ","
+Forward Winget App ID to install. For multiple apps, separate with ",". Case sensitive.
 
 .PARAMETER Uninstall
 To uninstall app. Works with AppIDs
@@ -30,7 +30,10 @@ If '-Uninstall' is used, it removes the app from WAU White List.
 .\winget-install.ps1 -AppIDs 7zip.7zip -WAUWhiteList
 
 .EXAMPLE
-.\winget-install.ps1 -AppIDs 7zip.7zip,notepad++.notepad++ -LogPath "C:\temp\logs"
+.\winget-install.ps1 -AppIDs 7zip.7zip,Notepad++.Notepad++ -LogPath "C:\temp\logs"
+
+.EXAMPLE
+.\winget-install.ps1 -AppIDs "7zip.7zip -v 22.00", "Notepad++.Notepad++"
 #>
 
 [CmdletBinding()]
@@ -44,53 +47,6 @@ param(
 
 <# FUNCTIONS #>
 
-#Initialization
-function Start-Init {
-
-    #Config console output encoding
-    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-
-    #Get WAU Installed location (if installed)
-    $WAURegKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Winget-AutoUpdate\"
-    if (Test-Path $WAURegKey) {
-        $Script:WAUInstallLocation = Get-ItemProperty $WAURegKey | Select-Object -ExpandProperty InstallLocation -ErrorAction SilentlyContinue
-    }
-
-    #LogPath initialisation
-    if (!($LogPath)) {
-        #If LogPath if null, get WAU log path from registry
-        if ($WAUInstallLocation) {
-            $LogPath = "$WAUInstallLocation\Logs"
-        }
-        else {
-            #Else, set default one
-            $LogPath = "$env:ProgramData\Winget-AutoUpdate\Logs"
-        }
-    }
-
-    #Logs initialisation
-    if (!(Test-Path $LogPath)) {
-        New-Item -ItemType Directory -Force -Path $LogPath | Out-Null
-    }
-
-    #Log file
-    if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
-        $Script:LogFile = "$LogPath\install.log"
-    }
-    else {
-        $Script:LogFile = "$LogPath\install_$env:UserName.log"
-    }
-
-    #Log Header
-    if ($Uninstall) {
-        Write-ToLog "###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW UNINSTALL REQUEST   ###" "Magenta"
-    }
-    else {
-        Write-ToLog "###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW INSTALL REQUEST   ###" "Magenta"
-    }
-
-}
-
 #Log Function
 function Write-ToLog ($LogMsg, $LogColor = "White") {
     #Get log
@@ -103,26 +59,30 @@ function Write-ToLog ($LogMsg, $LogColor = "White") {
 
 #Get WinGet Location Function
 function Get-WingetCmd {
-    #Get WinGet Path (if admin context)
-    $ResolveWingetPath = Resolve-Path "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*_*__8wekyb3d8bbwe" | Sort-Object { [version]($_.Path -replace '^[^\d]+_((\d+\.)*\d+)_.*', '$1') }
-    if ($ResolveWingetPath) {
-        #If multiple versions, pick last one
-        $WingetPath = $ResolveWingetPath[-1].Path
+
+    $WingetCmd = $null
+
+    try {
+        #Get WinGet Path
+        try {
+            #Get Admin Context Winget Location
+            $WingetInfo = (Get-Item "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*_8wekyb3d8bbwe\winget.exe").VersionInfo | Sort-Object -Property FileVersionRaw
+            #If multiple versions, pick most recent one
+            $WingetCmd = $WingetInfo[-1].FileName
+        }
+        catch {
+            #Get User context Winget Location
+            if (Test-Path "$env:LocalAppData\Microsoft\WindowsApps\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\winget.exe") {
+                $WingetCmd = "$env:LocalAppData\Microsoft\WindowsApps\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\winget.exe"
+            }
+        }
+        Write-ToLog "Winget path: $WingetCmd`n"
     }
-    #Get WinGet Location in User context
-    $WingetCmd = Get-Command winget.exe -ErrorAction SilentlyContinue
-    if ($WingetCmd) {
-        $Script:Winget = $WingetCmd.Source
+    catch {
+        Write-ToLog "Error: Winget not installed.`n" "Red"
     }
-    #Get Winget Location in System context
-    elseif (Test-Path "$WingetPath\winget.exe") {
-        $Script:Winget = "$WingetPath\winget.exe"
-    }
-    else {
-        Write-ToLog "Winget not installed or detected !" "Red"
-        break
-    }
-    Write-ToLog "Using following Winget Cmd: $winget`n"
+
+    return $WingetCmd
 }
 
 #Function to configure prefered scope option as Machine
@@ -153,6 +113,93 @@ function Add-ScopeMachine {
         Add-Member -InputObject $ConfigFile -MemberType NoteProperty -Name 'installBehavior' -Value $Preference -Force
     }
     $ConfigFile | ConvertTo-Json | Out-File $SettingsPath -Encoding utf8 -Force
+}
+
+function Install-Prerequisites {
+
+    Write-ToLog "Checking prerequisites..." "Cyan"
+
+    #Check if Visual C++ 2019 or 2022 installed
+    $Visual2019 = "Microsoft Visual C++ 2015-2019 Redistributable*"
+    $Visual2022 = "Microsoft Visual C++ 2015-2022 Redistributable*"
+    $path = Get-Item HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*, HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Where-Object { $_.GetValue("DisplayName") -like $Visual2019 -or $_.GetValue("DisplayName") -like $Visual2022 }
+
+    #If not installed, download and install
+    if (!($path)) {
+
+        Write-ToLog "Microsoft Visual C++ 2015-2022 is not installed." "Red"
+
+        try {
+            #Get proc architecture
+            if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") {
+                $OSArch = "arm64"
+            }
+            elseif ($env:PROCESSOR_ARCHITECTURE -like "*64*") {
+                $OSArch = "x64"
+            }
+            else {
+                $OSArch = "x86"
+            }
+
+            #Download and install
+            $SourceURL = "https://aka.ms/vs/17/release/VC_redist.$OSArch.exe"
+            $Installer = ".\VC_redist.$OSArch.exe"
+            Write-ToLog "-> Downloading $SourceURL..."
+            Invoke-WebRequest $SourceURL -UseBasicParsing -OutFile $Installer
+            Write-ToLog "-> Installing VC_redist.$OSArch.exe..."
+            Start-Process -FilePath $Installer -Args "/quiet /norestart" -Wait
+            Start-Sleep 3
+            Remove-Item $Installer -ErrorAction Ignore
+            Write-ToLog "-> MS Visual C++ 2015-2022 installed successfully." "Green"
+        }
+        catch {
+            Write-ToLog "-> MS Visual C++ 2015-2022 installation failed." "Red"
+        }
+
+    }
+
+    #Check available WinGet version, if fail set version to the latest version as of 2023-10-08
+    $WingetURL = 'https://api.github.com/repos/microsoft/winget-cli/releases/latest'
+    try {
+        $WinGetAvailableVersion = ((Invoke-WebRequest $WingetURL -UseBasicParsing | ConvertFrom-Json)[0].tag_name).Replace("v", "")
+    }
+    catch {
+        $WinGetAvailableVersion = "1.6.2771"
+    }
+
+    #Get installed Winget version
+    try {
+        $WingetInstalledVersionCmd = & $Winget -v
+        $WinGetInstalledVersion = (($WingetInstalledVersionCmd).Replace("-preview", "")).Replace("v", "")
+        Write-ToLog "Installed Winget version: $WingetInstalledVersionCmd"
+    }
+    catch {
+        Write-ToLog "WinGet is not installed" "Red"
+    }
+
+    #Check if the available WinGet is newer than the installed
+    if ($WinGetAvailableVersion -gt $WinGetInstalledVersion) {
+
+        #Try to install new version
+        try {
+            Write-ToLog "-> Installing Winget v$WinGetAvailableVersion"
+            $WingetURL = "https://github.com/microsoft/winget-cli/releases/download/v$WinGetAvailableVersion/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
+            $WingetInstaller = ".\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
+            Invoke-WebRequest $WingetURL -UseBasicParsing -OutFile $WingetInstaller
+            Add-AppxProvisionedPackage -Online -PackagePath "$DownloadPath\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle" -SkipLicense | Out-Null
+            Remove-Item $WingetInstaller -ErrorAction Ignore
+            Write-ToLog "-> Winget installed." "Green"
+
+            #Reload Winget location
+            $Winget = Get-WingetCmd
+        }
+        catch {
+            Write-ToLog "-> Failed to install Winget!" "Red"
+        }
+    }
+
+    Write-ToLog "Checking prerequisites ended" "Cyan"
+
 }
 
 #Check if app is installed
@@ -398,16 +445,59 @@ function Remove-WAUMods ($AppID) {
     }
 }
 
+
+
 <# MAIN #>
 
 #If running as a 32-bit process on an x64 system, re-launch as a 64-bit process
 if ("$env:PROCESSOR_ARCHITEW6432" -ne "ARM64") {
     if (Test-Path "$($env:WINDIR)\SysNative\WindowsPowerShell\v1.0\powershell.exe") {
-        Start-Process "$($env:WINDIR)\SysNative\WindowsPowerShell\v1.0\powershell.exe" -Wait -NoNewWindow -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command $($MyInvocation.line)"
+        Start-Process "$($env:WINDIR)\SysNative\WindowsPowerShell\v1.0\powershell.exe" -Wait -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command $($MyInvocation.line)"
         Exit $lastexitcode
     }
 }
 
+#Config console output encoding
+$null = cmd /c '' #Tip for ISE
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$Script:ProgressPreference = 'SilentlyContinue'
+
+#Check if current process is elevated (System or admin user)
+$CurrentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+$Script:IsElevated = $CurrentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+#Get potential WAU Installed location
+$WAURegKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Winget-AutoUpdate\"
+if (Test-Path $WAURegKey) {
+    $Script:WAUInstallLocation = Get-ItemProperty $WAURegKey | Select-Object -ExpandProperty InstallLocation -ErrorAction SilentlyContinue
+}
+
+#LogPath initialisation
+if (!($LogPath)) {
+    #If LogPath is not set, get WAU log path
+    if ($WAUInstallLocation) {
+        $LogPath = "$WAUInstallLocation\Logs"
+    }
+    else {
+        #Else, set a default one
+        $LogPath = "$env:ProgramData\Winget-AutoUpdate\Logs"
+    }
+}
+
+#Logs initialisation
+if (!(Test-Path $LogPath)) {
+    New-Item -ItemType Directory -Force -Path $LogPath | Out-Null
+}
+
+#Log file
+if ($IsElevated) {
+    $Script:LogFile = "$LogPath\install.log"
+}
+else {
+    $Script:LogFile = "$LogPath\install_$env:UserName.log"
+}
+
+#Header (not logged)
 Write-Host "`n"
 Write-Host "`t        888       888 d8b  .d8888b.           d8b" -ForegroundColor Cyan
 Write-Host "`t        888   o   888 Y8P d88P  Y88b          Y8P" -ForegroundColor Cyan
@@ -419,16 +509,25 @@ Write-Host "`t        8888P   Y8888 888 Y88b  d88P Y88b 888 888" -ForegroundColo
 Write-Host "`t        888P     Y888 888  `"Y8888P88  `"Y88888 888`n" -ForegroundColor Cyan
 Write-Host "`t       https://github.com/Romanitho/Winget-Install" -ForegroundColor Magenta
 Write-Host "`t     https://github.com/Romanitho/Winget-Install-GUI`n" -ForegroundColor Cyan
-Write-Host "`t_________________________________________________________`n`n"
+Write-Host "`t_________________________________________________________`n `n "
 
-#Run Init Function
-Start-Init
+#Log Header
+if ($Uninstall) {
+    Write-ToLog " `n###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW UNINSTALL REQUEST   ###`n " "Magenta"
+}
+else {
+    Write-ToLog " `n###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW INSTALL REQUEST   ###`n " "Magenta"
+}
 
-#Run Scope Machine funtion
-Add-ScopeMachine
+#Get Winget command
+$Script:Winget = Get-WingetCmd
 
-#Run WingetCmd Function
-Get-WingetCmd
+if ($IsElevated -eq $True) {
+    #Check/install prerequisites
+    Install-Prerequisites
+    #Run Scope Machine funtion
+    Add-ScopeMachine
+}
 
 #Run install or uninstall for all apps
 foreach ($App_Full in $AppIDs) {
