@@ -6,36 +6,48 @@ $AppToDetect = "Notepad++.Notepad++"
 
 Function Get-WingetCmd {
 
-    #Get WinGet Path (if admin context)
-    $ResolveWingetPath = Resolve-Path "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*_*__8wekyb3d8bbwe" | Sort-Object { [version]($_.Path -replace '^[^\d]+_((\d+\.)*\d+)_.*', '$1') }
-    if ($ResolveWingetPath) {
-        #If multiple version, pick last one
-        $WingetPath = $ResolveWingetPath[-1].Path
+    $WingetCmd = $null
+
+    #Get WinGet Path
+    try {
+        #Get Admin Context Winget Location
+        $WingetInfo = (Get-Item "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*_8wekyb3d8bbwe\winget.exe").VersionInfo | Sort-Object -Property FileVersionRaw
+        #If multiple versions, pick most recent one
+        $WingetCmd = $WingetInfo[-1].FileName
+    }
+    catch {
+        #Get User context Winget Location
+        if (Test-Path "$env:LocalAppData\Microsoft\WindowsApps\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\winget.exe") {
+            $WingetCmd = "$env:LocalAppData\Microsoft\WindowsApps\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\winget.exe"
+        }
     }
 
-    #Get Winget Location in User context
-    $WingetCmd = Get-Command winget.exe -ErrorAction SilentlyContinue
-    if ($WingetCmd) {
-        $Script:Winget = $WingetCmd.Source
-    }
-    #Get Winget Location in System context
-    elseif (Test-Path "$WingetPath\winget.exe") {
-        $Script:Winget = "$WingetPath\winget.exe"
-    }
-    else {
-        break
-    }
+    return $WingetCmd
 }
 
 <# MAIN #>
 
 #Get WinGet Location Function
-Get-WingetCmd
+$winget = Get-WingetCmd
 
-#Get "Winget List AppID"
-$InstalledApp = & $winget list --Id $AppToDetect --accept-source-agreements | Out-String
+#Set json export file
+$JsonFile = ".\InstalledApps.json"
 
-#Return if AppID existe in the list
-if ($InstalledApp -match [regex]::Escape($AppToDetect)) {
+#Get installed apps and version in json file
+& $Winget export -o $JsonFile --accept-source-agreements | Out-Null
+
+#Get json content
+$Json = Get-Content $JsonFile -Raw | ConvertFrom-Json
+
+#Get apps and version in hashtable
+$Packages = $Json.Sources.Packages
+
+#Remove json file
+Remove-Item $JsonFile -Force
+
+# Search for specific app and version
+$Apps = $Packages | Where-Object { $_.PackageIdentifier -eq $AppToDetect }
+
+if ($Apps) {
     return "Installed!"
 }
