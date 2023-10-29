@@ -81,37 +81,34 @@ function Get-WingetCmd {
 
 #Function to configure prefered scope option as Machine
 function Add-ScopeMachine {
-    #Function to configure prefered scope option as Machine
-    function Add-ScopeMachine {
-        #Get Settings path for system or current user
-        if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
-            $SettingsPath = "$Env:windir\System32\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
-        }
-        else {
-            $SettingsPath = "$env:LOCALAPPDATA\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\settings.json"
-        }
-
-        $ConfigFile = @{}
-
-        #Check if setting file exist, if not create it
-        if (Test-Path $SettingsPath) {
-            $ConfigFile = Get-Content -Path $SettingsPath | Where-Object { $_ -notmatch '//' } | ConvertFrom-Json
-        }
-        else {
-            New-Item -Path $SettingsPath
-        }
-
-        if ($ConfigFile.installBehavior.preferences) {
-            Add-Member -InputObject $ConfigFile.installBehavior.preferences -MemberType NoteProperty -Name 'scope' -Value 'Machine' -Force
-        }
-        else {
-            $Scope = New-Object PSObject -Property $(@{scope = 'Machine' })
-            $Preference = New-Object PSObject -Property $(@{preferences = $Scope })
-            Add-Member -InputObject $ConfigFile -MemberType NoteProperty -Name 'installBehavior' -Value $Preference -Force
-        }
-
-        $ConfigFile | ConvertTo-Json | Out-File $SettingsPath -Encoding utf8 -Force
+    #Get Settings path for system or current user
+    if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
+        $SettingsPath = "$Env:windir\System32\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
     }
+    else {
+        $SettingsPath = "$env:LOCALAPPDATA\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\settings.json"
+    }
+
+    $ConfigFile = @{}
+
+    #Check if setting file exist, if not create it
+    if (Test-Path $SettingsPath) {
+        $ConfigFile = Get-Content -Path $SettingsPath | Where-Object { $_ -notmatch '//' } | ConvertFrom-Json
+    }
+    else {
+        New-Item -Path $SettingsPath
+    }
+
+    if ($ConfigFile.installBehavior.preferences) {
+        Add-Member -InputObject $ConfigFile.installBehavior.preferences -MemberType NoteProperty -Name 'scope' -Value 'Machine' -Force
+    }
+    else {
+        $Scope = New-Object PSObject -Property $(@{scope = 'Machine' })
+        $Preference = New-Object PSObject -Property $(@{preferences = $Scope })
+        Add-Member -InputObject $ConfigFile -MemberType NoteProperty -Name 'installBehavior' -Value $Preference -Force
+    }
+
+    $ConfigFile | ConvertTo-Json | Out-File $SettingsPath -Encoding utf8 -Force
 }
 
 function Install-Prerequisites {
