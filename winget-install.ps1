@@ -158,7 +158,7 @@ function Install-Prerequisites {
     }
 
     #Check if Microsoft.VCLibs.140.00.UWPDesktop is installed
-    if (!(Get-AppxPackage -Name 'Microsoft.VCLibs.140.00.UWPDesktop')) {
+    if (!(Get-AppxPackage -Name 'Microsoft.VCLibs.140.00.UWPDesktop' -AllUsers)) {
         Write-ToLog "Microsoft.VCLibs.140.00.UWPDesktop is not installed" "Red"
         $VCLibsUrl = "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx"
         $VCLibsFile = ".\Microsoft.VCLibs.x64.14.00.Desktop.appx"
