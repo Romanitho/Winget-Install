@@ -8,7 +8,7 @@ Allow to run Winget in System Context to install your apps.
 https://github.com/Romanitho/Winget-Install
 
 .PARAMETER AppIDs
-Forward Winget App ID to install. For multiple apps, separate with ","
+Forward Winget App ID to install. For multiple apps, separate with ",". Case sensitive.
 
 .PARAMETER Uninstall
 To uninstall app. Works with AppIDs
@@ -30,7 +30,10 @@ If '-Uninstall' is used, it removes the app from WAU White List.
 .\winget-install.ps1 -AppIDs 7zip.7zip -WAUWhiteList
 
 .EXAMPLE
-.\winget-install.ps1 -AppIDs 7zip.7zip,notepad++.notepad++ -LogPath "C:\temp\logs"
+.\winget-install.ps1 -AppIDs 7zip.7zip,Notepad++.Notepad++ -LogPath "C:\temp\logs"
+
+.EXAMPLE
+.\winget-install.ps1 -AppIDs "7zip.7zip -v 22.00", "Notepad++.Notepad++"
 #>
 
 [CmdletBinding()]
@@ -44,55 +47,8 @@ param(
 
 <# FUNCTIONS #>
 
-#Initialization
-function Start-Init {
-
-    #Config console output encoding
-    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-
-    #Get WAU Installed location (if installed)
-    $WAURegKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Winget-AutoUpdate\"
-    if (Test-Path $WAURegKey) {
-        $Script:WAUInstallLocation = Get-ItemProperty $WAURegKey | Select-Object -ExpandProperty InstallLocation -ErrorAction SilentlyContinue
-    }
-
-    #LogPath initialisation
-    if (!($LogPath)) {
-        #If LogPath if null, get WAU log path from registry
-        if ($WAUInstallLocation) {
-            $LogPath = "$WAUInstallLocation\Logs"
-        }
-        else {
-            #Else, set default one
-            $LogPath = "$env:ProgramData\Winget-AutoUpdate\Logs"
-        }
-    }
-
-    #Logs initialisation
-    if (!(Test-Path $LogPath)) {
-        New-Item -ItemType Directory -Force -Path $LogPath | Out-Null
-    }
-
-    #Log file
-    if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
-        $Script:LogFile = "$LogPath\install.log"
-    }
-    else {
-        $Script:LogFile = "$LogPath\install_$env:UserName.log"
-    }
-
-    #Log Header
-    if ($Uninstall) {
-        Write-Log "###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW UNINSTALL REQUEST   ###" "Magenta"
-    }
-    else {
-        Write-Log "###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW INSTALL REQUEST   ###" "Magenta"
-    }
-
-}
-
 #Log Function
-function Write-Log ($LogMsg, $LogColor = "White") {
+function Write-ToLog ($LogMsg, $LogColor = "White") {
     #Get log
     $Log = "$(Get-Date -UFormat "%T") - $LogMsg"
     #Echo log
@@ -103,56 +59,161 @@ function Write-Log ($LogMsg, $LogColor = "White") {
 
 #Get WinGet Location Function
 function Get-WingetCmd {
-    #Get WinGet Path (if admin context)
-    $ResolveWingetPath = Resolve-Path "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*_*__8wekyb3d8bbwe" | Sort-Object { [version]($_.Path -replace '^[^\d]+_((\d+\.)*\d+)_.*', '$1') }
-    if ($ResolveWingetPath) {
-        #If multiple versions, pick last one
-        $WingetPath = $ResolveWingetPath[-1].Path
+
+    $WingetCmd = $null
+
+    #Get WinGet Path
+    try {
+        #Get Admin Context Winget Location
+        $WingetInfo = (Get-Item "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*_8wekyb3d8bbwe\winget.exe").VersionInfo | Sort-Object -Property FileVersionRaw
+        #If multiple versions, pick most recent one
+        $WingetCmd = $WingetInfo[-1].FileName
     }
-    #Get WinGet Location in User context
-    $WingetCmd = Get-Command winget.exe -ErrorAction SilentlyContinue
-    if ($WingetCmd) {
-        $Script:Winget = $WingetCmd.Source
+    catch {
+        #Get User context Winget Location
+        if (Test-Path "$env:LocalAppData\Microsoft\WindowsApps\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\winget.exe") {
+            $WingetCmd = "$env:LocalAppData\Microsoft\WindowsApps\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\winget.exe"
+        }
     }
-    #Get Winget Location in System context
-    elseif (Test-Path "$WingetPath\winget.exe") {
-        $Script:Winget = "$WingetPath\winget.exe"
-    }
-    else {
-        Write-Log "Winget not installed or detected !" "Red"
-        break
-    }
-    Write-Log "Using following Winget Cmd: $winget`n"
+
+    return $WingetCmd
 }
 
 #Function to configure prefered scope option as Machine
 function Add-ScopeMachine {
-    #Get Settings path for system or current user
-    if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
-        $SettingsPath = "$Env:windir\System32\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
-    }
-    else {
-        $SettingsPath = "$env:LOCALAPPDATA\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\settings.json"
-    }
+    #Function to configure prefered scope option as Machine
+    function Add-ScopeMachine {
+        #Get Settings path for system or current user
+        if ([System.Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
+            $SettingsPath = "$Env:windir\System32\config\systemprofile\AppData\Local\Microsoft\WinGet\Settings\settings.json"
+        }
+        else {
+            $SettingsPath = "$env:LOCALAPPDATA\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\settings.json"
+        }
 
-    #Check if setting file exist, if not create it
-    if (Test-Path $SettingsPath) {
-        $ConfigFile = Get-Content -Path $SettingsPath | Where-Object { $_ -notmatch '//' } | ConvertFrom-Json
-    }
-
-    if (!$ConfigFile) {
         $ConfigFile = @{}
+
+        #Check if setting file exist, if not create it
+        if (Test-Path $SettingsPath) {
+            $ConfigFile = Get-Content -Path $SettingsPath | Where-Object { $_ -notmatch '//' } | ConvertFrom-Json
+        }
+        else {
+            New-Item -Path $SettingsPath
+        }
+
+        if ($ConfigFile.installBehavior.preferences) {
+            Add-Member -InputObject $ConfigFile.installBehavior.preferences -MemberType NoteProperty -Name 'scope' -Value 'Machine' -Force
+        }
+        else {
+            $Scope = New-Object PSObject -Property $(@{scope = 'Machine' })
+            $Preference = New-Object PSObject -Property $(@{preferences = $Scope })
+            Add-Member -InputObject $ConfigFile -MemberType NoteProperty -Name 'installBehavior' -Value $Preference -Force
+        }
+
+        $ConfigFile | ConvertTo-Json | Out-File $SettingsPath -Encoding utf8 -Force
+    }
+}
+
+function Install-Prerequisites {
+
+    Write-ToLog "Checking prerequisites..." "Cyan"
+
+    #Check if Visual C++ 2019 or 2022 installed
+    $Visual2019 = "Microsoft Visual C++ 2015-2019 Redistributable*"
+    $Visual2022 = "Microsoft Visual C++ 2015-2022 Redistributable*"
+    $path = Get-Item HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*, HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Where-Object { $_.GetValue("DisplayName") -like $Visual2019 -or $_.GetValue("DisplayName") -like $Visual2022 }
+
+    #If not installed, download and install
+    if (!($path)) {
+
+        Write-ToLog "Microsoft Visual C++ 2015-2022 is not installed." "Red"
+
+        try {
+            #Get proc architecture
+            if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") {
+                $OSArch = "arm64"
+            }
+            elseif ($env:PROCESSOR_ARCHITECTURE -like "*64*") {
+                $OSArch = "x64"
+            }
+            else {
+                $OSArch = "x86"
+            }
+
+            #Download and install
+            $SourceURL = "https://aka.ms/vs/17/release/VC_redist.$OSArch.exe"
+            $Installer = ".\VC_redist.$OSArch.exe"
+            Write-ToLog "-> Downloading $SourceURL..."
+            Invoke-WebRequest $SourceURL -UseBasicParsing -OutFile $Installer
+            Write-ToLog "-> Installing VC_redist.$OSArch.exe..."
+            Start-Process -FilePath $Installer -Args "/quiet /norestart" -Wait
+            Start-Sleep 3
+            Remove-Item $Installer -ErrorAction Ignore
+            Write-ToLog "-> MS Visual C++ 2015-2022 installed successfully." "Green"
+        }
+        catch {
+            Write-ToLog "-> MS Visual C++ 2015-2022 installation failed." "Red"
+        }
+
     }
 
-    if ($ConfigFile.installBehavior.preferences) {
-        Add-Member -InputObject $ConfigFile.installBehavior.preferences -MemberType NoteProperty -Name 'scope' -Value 'Machine' -Force
+    #Check if Microsoft.VCLibs.140.00.UWPDesktop is installed
+    if (!(Get-AppxPackage -Name 'Microsoft.VCLibs.140.00.UWPDesktop')) {
+        Write-ToLog "Microsoft.VCLibs.140.00.UWPDesktop is not installed" "Red"
+        $VCLibsUrl = "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx"
+        $VCLibsFile = ".\Microsoft.VCLibs.x64.14.00.Desktop.appx"
+        Write-ToLog "-> Downloading $VCLibsUrl..."
+        Invoke-RestMethod -Uri $VCLibsUrl -OutFile $VCLibsFile
+        try {
+            Write-ToLog "-> Installing Microsoft.VCLibs.140.00.UWPDesktop..."
+            Add-AppxProvisionedPackage -Online -PackagePath $VCLibsFile -SkipLicense | Out-Null
+            Write-ToLog "-> Microsoft.VCLibs.140.00.UWPDesktop installed successfully." "Green"
+        }
+        catch {
+            Write-ToLog "-> Failed to intall Microsoft.VCLibs.140.00.UWPDesktop..." "Red"
+        }
+        Remove-Item -Path $VCLibsFile -Force
     }
-    else {
-        $Scope = New-Object PSObject -Property $(@{scope = 'Machine' })
-        $Preference = New-Object PSObject -Property $(@{preferences = $Scope })
-        Add-Member -InputObject $ConfigFile -MemberType NoteProperty -Name 'installBehavior' -Value $Preference -Force
+
+    #Check available WinGet version, if fail set version to the latest version as of 2023-10-08
+    $WingetURL = 'https://api.github.com/repos/microsoft/winget-cli/releases/latest'
+    try {
+        $WinGetAvailableVersion = ((Invoke-WebRequest $WingetURL -UseBasicParsing | ConvertFrom-Json)[0].tag_name).Replace("v", "")
     }
-    $ConfigFile | ConvertTo-Json | Out-File $SettingsPath -Encoding utf8 -Force
+    catch {
+        $WinGetAvailableVersion = "1.6.2771"
+    }
+
+    #Get installed Winget version
+    try {
+        $WingetInstalledVersionCmd = & $Winget -v
+        $WinGetInstalledVersion = (($WingetInstalledVersionCmd).Replace("-preview", "")).Replace("v", "")
+        Write-ToLog "Installed Winget version: $WingetInstalledVersionCmd"
+    }
+    catch {
+        Write-ToLog "WinGet is not installed" "Red"
+    }
+
+    #Check if the available WinGet is newer than the installed
+    if ($WinGetAvailableVersion -gt $WinGetInstalledVersion) {
+
+        Write-ToLog "-> Downloading Winget v$WinGetAvailableVersion"
+        $WingetURL = "https://github.com/microsoft/winget-cli/releases/download/v$WinGetAvailableVersion/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
+        $WingetInstaller = ".\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
+        Invoke-RestMethod -Uri $WingetURL -OutFile $WingetInstaller
+        try {
+            Write-ToLog "-> Installing Winget v$WinGetAvailableVersion"
+            Add-AppxProvisionedPackage -Online -PackagePath $WingetInstaller -SkipLicense | Out-Null
+            Write-ToLog "-> Winget installed." "Green"
+        }
+        catch {
+            Write-ToLog "-> Failed to install Winget!" "Red"
+        }
+        Remove-Item -Path $WingetInstaller -Force
+    }
+
+    Write-ToLog "Checking prerequisites ended.`n" "Cyan"
+
 }
 
 #Check if app is installed
@@ -176,11 +237,11 @@ function Confirm-Exist ($AppID) {
 
     #Return if AppID exists
     if ($WingetApp -match [regex]::Escape($AppID)) {
-        Write-Log "-> $AppID exists on Winget Repository." "Cyan"
+        Write-ToLog "-> $AppID exists on Winget Repository." "Cyan"
         return $true
     }
     else {
-        Write-Log "-> $AppID does not exist on Winget Repository! Check spelling." "Red"
+        Write-ToLog "-> $AppID does not exist on Winget Repository! Check spelling." "Red"
         return $false
     }
 }
@@ -211,8 +272,8 @@ function Test-ModsInstall ($AppID) {
     elseif (($WAUInstallLocation) -and (Test-Path "$WAUInstallLocation\mods\$AppID-installed.ps1")) {
         $ModsInstalled = "$WAUInstallLocation\mods\$AppID-installed.ps1"
     }
-    
-    return $ModsPreInstall, $ModsInstall, $ModsInstalledOnce, $ModsInstalled 
+
+    return $ModsPreInstall, $ModsInstall, $ModsInstalledOnce, $ModsInstalled
 }
 
 #Check if uninstall modifications exist in "mods" directory
@@ -250,32 +311,32 @@ function Install-App ($AppID, $AppArgs) {
 
         #If PreInstall script exist
         if ($ModsPreInstall) {
-            Write-Log "-> Modifications for $AppID before install are being applied..." "Yellow"
+            Write-ToLog "-> Modifications for $AppID before install are being applied..." "Yellow"
             & "$ModsPreInstall"
         }
 
         #Install App
-        Write-Log "-> Installing $AppID..." "Yellow"
+        Write-ToLog "-> Installing $AppID..." "Yellow"
         $WingetArgs = "install --id $AppID -e --accept-package-agreements --accept-source-agreements -s winget -h $AppArgs" -split " "
-        Write-Log "-> Running: `"$Winget`" $WingetArgs"
-        & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
+        Write-ToLog "-> Running: `"$Winget`" $WingetArgs"
+        & "$Winget" $WingetArgs | Where-Object { $_ -notlike "   *" } | Tee-Object -file $LogFile -Append
 
         if ($ModsInstall) {
-            Write-Log "-> Modifications for $AppID during install are being applied..." "Yellow"
+            Write-ToLog "-> Modifications for $AppID during install are being applied..." "Yellow"
             & "$ModsInstall"
         }
 
         #Check if install is ok
         $IsInstalled = Confirm-Install $AppID
         if ($IsInstalled) {
-            Write-Log "-> $AppID successfully installed." "Green"
+            Write-ToLog "-> $AppID successfully installed." "Green"
 
             if ($ModsInstalledOnce) {
-                Write-Log "-> Modifications for $AppID after install (one time) are being applied..." "Yellow"
+                Write-ToLog "-> Modifications for $AppID after install (one time) are being applied..." "Yellow"
                 & "$ModsInstalledOnce"
             }
             elseif ($ModsInstalled) {
-                Write-Log "-> Modifications for $AppID after install are being applied..." "Yellow"
+                Write-ToLog "-> Modifications for $AppID after install are being applied..." "Yellow"
                 & "$ModsInstalled"
             }
 
@@ -290,11 +351,11 @@ function Install-App ($AppID, $AppArgs) {
             }
         }
         else {
-            Write-Log "-> $AppID installation failed!" "Red"
+            Write-ToLog "-> $AppID installation failed!" "Red"
         }
     }
     else {
-        Write-Log "-> $AppID is already installed." "Cyan"
+        Write-ToLog "-> $AppID is already installed." "Cyan"
     }
 }
 
@@ -307,27 +368,27 @@ function Uninstall-App ($AppID, $AppArgs) {
 
         #If PreUninstall script exist
         if ($ModsPreUninstall) {
-            Write-Log "-> Modifications for $AppID before uninstall are being applied..." "Yellow"
+            Write-ToLog "-> Modifications for $AppID before uninstall are being applied..." "Yellow"
             & "$ModsPreUninstall"
         }
 
         #Uninstall App
-        Write-Log "-> Uninstalling $AppID..." "Yellow"
+        Write-ToLog "-> Uninstalling $AppID..." "Yellow"
         $WingetArgs = "uninstall --id $AppID -e --accept-source-agreements -h" -split " "
-        Write-Log "-> Running: `"$Winget`" $WingetArgs"
-        & "$Winget" $WingetArgs | Tee-Object -file $LogFile -Append
+        Write-ToLog "-> Running: `"$Winget`" $WingetArgs"
+        & "$Winget" $WingetArgs | Where-Object { $_ -notlike "   *" } | Tee-Object -file $LogFile -Append
 
         if ($ModsUninstall) {
-            Write-Log "-> Modifications for $AppID during uninstall are being applied..." "Yellow"
+            Write-ToLog "-> Modifications for $AppID during uninstall are being applied..." "Yellow"
             & "$ModsUninstall"
         }
-        
+
         #Check if uninstall is ok
         $IsInstalled = Confirm-Install $AppID
         if (!($IsInstalled)) {
-            Write-Log "-> $AppID successfully uninstalled." "Green"
+            Write-ToLog "-> $AppID successfully uninstalled." "Green"
             if ($ModsUninstalled) {
-                Write-Log "-> Modifications for $AppID after uninstall are being applied..." "Yellow"
+                Write-ToLog "-> Modifications for $AppID after uninstall are being applied..." "Yellow"
                 & "$ModsUninstalled"
             }
 
@@ -342,11 +403,11 @@ function Uninstall-App ($AppID, $AppArgs) {
             }
         }
         else {
-            Write-Log "-> $AppID uninstall failed!" "Red"
+            Write-ToLog "-> $AppID uninstall failed!" "Red"
         }
     }
     else {
-        Write-Log "-> $AppID is not installed." "Cyan"
+        Write-ToLog "-> $AppID is not installed." "Cyan"
     }
 }
 
@@ -355,7 +416,7 @@ function Add-WAUWhiteList ($AppID) {
     #Check if WAU default intall path exists
     $WhiteList = "$WAUInstallLocation\included_apps.txt"
     if (Test-Path $WhiteList) {
-        Write-Log "-> Add $AppID to WAU included_apps.txt"
+        Write-ToLog "-> Add $AppID to WAU included_apps.txt"
         #Add App to "included_apps.txt"
         Add-Content -path $WhiteList -Value "`n$AppID" -Force
         #Remove duplicate and blank lines
@@ -369,7 +430,7 @@ function Remove-WAUWhiteList ($AppID) {
     #Check if WAU default intall path exists
     $WhiteList = "$WAUInstallLocation\included_apps.txt"
     if (Test-Path $WhiteList) {
-        Write-Log "-> Remove $AppID from WAU included_apps.txt"
+        Write-ToLog "-> Remove $AppID from WAU included_apps.txt"
         #Remove app from list
         $file = Get-Content $WhiteList | Where-Object { $_ -ne "$AppID" }
         $file | Out-File $WhiteList
@@ -382,7 +443,7 @@ function Add-WAUMods ($AppID) {
     $Mods = "$WAUInstallLocation\mods"
     if (Test-Path $Mods) {
         #Add mods
-        Write-Log "-> Add modifications for $AppID to WAU 'mods'"
+        Write-ToLog "-> Add modifications for $AppID to WAU 'mods'"
         Copy-Item "$PSScriptRoot\mods\$AppID-*" -Destination "$Mods" -Exclude "*installed-once*", "*uninstall*" -Force
     }
 }
@@ -392,22 +453,65 @@ function Remove-WAUMods ($AppID) {
     #Check if WAU default install path exists
     $Mods = "$WAUInstallLocation\mods"
     if (Test-Path "$Mods\$AppID*") {
-        Write-Log "-> Remove $AppID modifications from WAU 'mods'"
+        Write-ToLog "-> Remove $AppID modifications from WAU 'mods'"
         #Remove mods
         Remove-Item -Path "$Mods\$AppID-*" -Exclude "*uninstall*" -Force
     }
 }
+
+
 
 <# MAIN #>
 
 #If running as a 32-bit process on an x64 system, re-launch as a 64-bit process
 if ("$env:PROCESSOR_ARCHITEW6432" -ne "ARM64") {
     if (Test-Path "$($env:WINDIR)\SysNative\WindowsPowerShell\v1.0\powershell.exe") {
-        Start-Process "$($env:WINDIR)\SysNative\WindowsPowerShell\v1.0\powershell.exe" -Wait -NoNewWindow -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command $($MyInvocation.line)"
+        Start-Process "$($env:WINDIR)\SysNative\WindowsPowerShell\v1.0\powershell.exe" -Wait -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command $($MyInvocation.line)"
         Exit $lastexitcode
     }
 }
 
+#Config console output encoding
+$null = cmd /c '' #Tip for ISE
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$Script:ProgressPreference = 'SilentlyContinue'
+
+#Check if current process is elevated (System or admin user)
+$CurrentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+$Script:IsElevated = $CurrentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+#Get potential WAU Installed location
+$WAURegKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Winget-AutoUpdate\"
+if (Test-Path $WAURegKey) {
+    $Script:WAUInstallLocation = Get-ItemProperty $WAURegKey | Select-Object -ExpandProperty InstallLocation -ErrorAction SilentlyContinue
+}
+
+#LogPath initialisation
+if (!($LogPath)) {
+    #If LogPath is not set, get WAU log path
+    if ($WAUInstallLocation) {
+        $LogPath = "$WAUInstallLocation\Logs"
+    }
+    else {
+        #Else, set a default one
+        $LogPath = "$env:ProgramData\Winget-AutoUpdate\Logs"
+    }
+}
+
+#Logs initialisation
+if (!(Test-Path $LogPath)) {
+    New-Item -ItemType Directory -Force -Path $LogPath | Out-Null
+}
+
+#Log file
+if ($IsElevated) {
+    $Script:LogFile = "$LogPath\install.log"
+}
+else {
+    $Script:LogFile = "$LogPath\install_$env:UserName.log"
+}
+
+#Header (not logged)
 Write-Host "`n"
 Write-Host "`t        888       888 d8b  .d8888b.           d8b" -ForegroundColor Cyan
 Write-Host "`t        888   o   888 Y8P d88P  Y88b          Y8P" -ForegroundColor Cyan
@@ -419,43 +523,59 @@ Write-Host "`t        8888P   Y8888 888 Y88b  d88P Y88b 888 888" -ForegroundColo
 Write-Host "`t        888P     Y888 888  `"Y8888P88  `"Y88888 888`n" -ForegroundColor Cyan
 Write-Host "`t       https://github.com/Romanitho/Winget-Install" -ForegroundColor Magenta
 Write-Host "`t     https://github.com/Romanitho/Winget-Install-GUI`n" -ForegroundColor Cyan
-Write-Host "`t_________________________________________________________`n`n"
+Write-Host "`t_________________________________________________________`n `n "
 
-#Run Init Function
-Start-Init
-
-#Run Scope Machine funtion
-Add-ScopeMachine
-
-#Run WingetCmd Function
-Get-WingetCmd
-
-#Run install or uninstall for all apps
-foreach ($App_Full in $AppIDs) {
-    #Split AppID and Custom arguments
-    $AppID, $AppArgs = ($App_Full.Trim().Split(" ", 2))
-
-    #Log current App
-    Write-Log "Start $AppID processing..." "Blue"
-
-    #Install or Uninstall command
-    if ($Uninstall) {
-        Uninstall-App $AppID $AppArgs
-    }
-    else {
-        #Check if app exists on Winget Repo
-        $Exists = Confirm-Exist $AppID
-        if ($Exists) {
-            #Install
-            Install-App $AppID $AppArgs
-        }
-    }
-
-    #Log current App
-    Write-Log "$AppID processing finished!`n" "Blue"
-    Start-Sleep 1
-
+#Log Header
+if ($Uninstall) {
+    Write-ToLog "###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW UNINSTALL REQUEST   ###`n " "Magenta"
+}
+else {
+    Write-ToLog "###   $(Get-Date -Format (Get-culture).DateTimeFormat.ShortDatePattern) - NEW INSTALL REQUEST   ###`n " "Magenta"
 }
 
-Write-Log "###   END REQUEST   ###`n" "Magenta"
+#Get Winget command
+$Script:Winget = Get-WingetCmd
+
+if ($IsElevated -eq $True) {
+    Write-ToLog "Running with admin rights.`n "
+    #Check/install prerequisites
+    Install-Prerequisites
+    #Reload Winget command
+    $Script:Winget = Get-WingetCmd
+    #Run Scope Machine funtion
+    Add-ScopeMachine
+}
+else {
+    Write-ToLog "Running without admin rights.`n "
+}
+
+if ($Winget) {
+    #Run install or uninstall for all apps
+    foreach ($App_Full in $AppIDs) {
+        #Split AppID and Custom arguments
+        $AppID, $AppArgs = ($App_Full.Trim().Split(" ", 2))
+
+        #Log current App
+        Write-ToLog "Start $AppID processing..." "Blue"
+
+        #Install or Uninstall command
+        if ($Uninstall) {
+            Uninstall-App $AppID $AppArgs
+        }
+        else {
+            #Check if app exists on Winget Repo
+            $Exists = Confirm-Exist $AppID
+            if ($Exists) {
+                #Install
+                Install-App $AppID $AppArgs
+            }
+        }
+
+        #Log current App
+        Write-ToLog "$AppID processing finished!`n" "Blue"
+        Start-Sleep 1
+    }
+}
+
+Write-ToLog "###   END REQUEST   ###`n" "Magenta"
 Start-Sleep 3
