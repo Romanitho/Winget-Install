@@ -31,7 +31,7 @@ Function Get-WingetCmd {
 $winget = Get-WingetCmd
 
 #Set json export file
-$JsonFile = ".\InstalledApps.json"
+$JsonFile = "$env:TEMP\InstalledApps.json"
 
 #Get installed apps and version in json file
 & $Winget export -o $JsonFile --accept-source-agreements | Out-Null

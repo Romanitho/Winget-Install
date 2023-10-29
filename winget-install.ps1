@@ -142,11 +142,11 @@ function Install-Prerequisites {
 
             #Download and install
             $SourceURL = "https://aka.ms/vs/17/release/VC_redist.$OSArch.exe"
-            $Installer = ".\VC_redist.$OSArch.exe"
+            $Installer = "$env:TEMP\VC_redist.$OSArch.exe"
             Write-ToLog "-> Downloading $SourceURL..."
             Invoke-WebRequest $SourceURL -UseBasicParsing -OutFile $Installer
             Write-ToLog "-> Installing VC_redist.$OSArch.exe..."
-            Start-Process -FilePath $Installer -Args "/quiet /norestart" -Wait
+            Start-Process -FilePath $Installer -Args "/passive /norestart" -Wait
             Start-Sleep 3
             Remove-Item $Installer -ErrorAction Ignore
             Write-ToLog "-> MS Visual C++ 2015-2022 installed successfully." "Green"
@@ -158,10 +158,10 @@ function Install-Prerequisites {
     }
 
     #Check if Microsoft.VCLibs.140.00.UWPDesktop is installed
-    if (!(Get-AppxPackage -Name 'Microsoft.VCLibs.140.00.UWPDesktop')) {
+    if (!(Get-AppxPackage -Name 'Microsoft.VCLibs.140.00.UWPDesktop' -AllUsers)) {
         Write-ToLog "Microsoft.VCLibs.140.00.UWPDesktop is not installed" "Red"
         $VCLibsUrl = "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx"
-        $VCLibsFile = ".\Microsoft.VCLibs.x64.14.00.Desktop.appx"
+        $VCLibsFile = "$env:TEMP\Microsoft.VCLibs.x64.14.00.Desktop.appx"
         Write-ToLog "-> Downloading $VCLibsUrl..."
         Invoke-RestMethod -Uri $VCLibsUrl -OutFile $VCLibsFile
         try {
@@ -199,7 +199,7 @@ function Install-Prerequisites {
 
         Write-ToLog "-> Downloading Winget v$WinGetAvailableVersion"
         $WingetURL = "https://github.com/microsoft/winget-cli/releases/download/v$WinGetAvailableVersion/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
-        $WingetInstaller = ".\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
+        $WingetInstaller = "$env:TEMP\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
         Invoke-RestMethod -Uri $WingetURL -OutFile $WingetInstaller
         try {
             Write-ToLog "-> Installing Winget v$WinGetAvailableVersion"
