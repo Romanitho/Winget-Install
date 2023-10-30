@@ -96,7 +96,7 @@ function Add-ScopeMachine {
         $ConfigFile = Get-Content -Path $SettingsPath | Where-Object { $_ -notmatch '//' } | ConvertFrom-Json
     }
     else {
-        New-Item -Path $SettingsPath | Out-Null
+        New-Item -Path $SettingsPath -Force | Out-Null
     }
 
     if ($ConfigFile.installBehavior.preferences) {
