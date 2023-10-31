@@ -1,61 +1,56 @@
-#Common shared functions for mods handling
+#Common shared functions to handle the mods
 
 function Invoke-ModsApp ($Run, $RunSwitch, $RunWait, $User) {
     if (Test-Path "$Run") {
-	    if (!$RunSwitch) {$RunSwitch = " "}
-	    if (!$User) {
-	      if (!$RunWait) {
-	      	Start-Process $Run -ArgumentList $RunSwitch
-	      }
-	      else {
-	      	Start-Process $Run -ArgumentList $RunSwitch -Wait
-	      }
-	    }
-	    else {
-	    	Start-Process explorer $Run
-	    }
+        if (!$RunSwitch) { $RunSwitch = " " }
+        if (!$User) {
+            if (!$RunWait) {
+                Start-Process $Run -ArgumentList $RunSwitch
+            }
+            else {
+                Start-Process $Run -ArgumentList $RunSwitch -Wait
+            }
+        }
+        else {
+            Start-Process explorer $Run
+        }
     }
     Return
 }
 
 
 function Stop-ModsProc ($Proc) {
-    foreach ($process in $Proc)
-    {
+    foreach ($process in $Proc) {
         Stop-Process -Name $process -Force -ErrorAction SilentlyContinue | Out-Null
     }
     Return
 }
 
 function Wait-ModsProc ($Wait) {
-    foreach ($process in $Wait)
-    {
+    foreach ($process in $Wait) {
         Get-Process $process -ErrorAction SilentlyContinue | Foreach-Object { $_.WaitForExit() }
     }
     Return
 }
 
 function Install-WingetID ($WingetIDInst) {
-    foreach ($app in $WingetIDInst)
-    {
-        & $Winget install --id $app --accept-package-agreements --accept-source-agreements -h
+    foreach ($app in $WingetIDInst) {
+        & $Winget install --id $app -e --accept-package-agreements --accept-source-agreements -s winget -h
     }
     Return
 }
 
 function Uninstall-WingetID ($WingetIDUninst) {
-    foreach ($app in $WingetIDUninst)
-    {
-        & $Winget uninstall --id $app -e --accept-source-agreements -h
+    foreach ($app in $WingetIDUninst) {
+        & $Winget uninstall --id $app -e --accept-source-agreements -s winget -h
     }
     Return
 }
 
-function Uninstall-ModsApp ($AppUninst) {
-    foreach ($app in $AppUninst)
-    {
+function Uninstall-ModsApp ($AppUninst, $AllVersions) {
+    foreach ($app in $AppUninst) {
         $InstalledSoftware = Get-ChildItem "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall"
-        foreach ($obj in $InstalledSoftware){
+        foreach ($obj in $InstalledSoftware) {
             if ($obj.GetValue('DisplayName') -like $App) {
                 $UninstallString = $obj.GetValue('UninstallString')
                 $CleanedUninstallString = $UninstallString.Trim([char]0x0022)
@@ -106,12 +101,14 @@ function Uninstall-ModsApp ($AppUninst) {
                     }
                 }
                 $x64 = $true
-                break
+                if (!$AllVersions) {
+                    break
+                }
             }
         }
         if (!$x64) {
             $InstalledSoftware = Get-ChildItem "HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
-            foreach ($obj in $InstalledSoftware){
+            foreach ($obj in $InstalledSoftware) {
                 if ($obj.GetValue('DisplayName') -like $App) {
                     $UninstallString = $obj.GetValue('UninstallString')
                     $CleanedUninstallString = $UninstallString.Trim([char]0x0022)
@@ -161,7 +158,9 @@ function Uninstall-ModsApp ($AppUninst) {
                             }
                         }
                     }
-                    break
+                    if (!$AllVersions) {
+                        break
+                    }
                 }
             }
         }
@@ -169,8 +168,7 @@ function Uninstall-ModsApp ($AppUninst) {
     Return
 }
 function Remove-ModsLnk ($Lnk) {
-    foreach ($link in $Lnk)
-    {
+    foreach ($link in $Lnk) {
         Remove-Item -Path "${env:Public}\Desktop\$link.lnk" -Force -ErrorAction SilentlyContinue | Out-Null
     }
     Return
@@ -178,7 +176,7 @@ function Remove-ModsLnk ($Lnk) {
 
 function Add-ModsReg ($AddKey, $AddValue, $AddTypeData, $AddType) {
     if ($AddKey -like "HKEY_LOCAL_MACHINE*") {
-        $AddKey = $AddKey.replace("HKEY_LOCAL_MACHINE","HKLM:")
+        $AddKey = $AddKey.replace("HKEY_LOCAL_MACHINE", "HKLM:")
     }
     if (!(Test-Path "$AddKey")) {
         New-Item $AddKey -Force -ErrorAction SilentlyContinue | Out-Null
@@ -189,7 +187,7 @@ function Add-ModsReg ($AddKey, $AddValue, $AddTypeData, $AddType) {
 
 function Remove-ModsReg ($DelKey, $DelValue) {
     if ($DelKey -like "HKEY_LOCAL_MACHINE*") {
-        $DelKey = $DelKey.replace("HKEY_LOCAL_MACHINE","HKLM:")
+        $DelKey = $DelKey.replace("HKEY_LOCAL_MACHINE", "HKLM:")
     }
     if (Test-Path "$DelKey") {
         if (!$DelValue) {
@@ -203,8 +201,7 @@ function Remove-ModsReg ($DelKey, $DelValue) {
 }
 
 function Remove-ModsFile ($DelFile) {
-    foreach ($file in $DelFile)
-    {
+    foreach ($file in $DelFile) {
         if (Test-Path "$file") {
             Remove-Item -Path $file -Force -Recurse -ErrorAction SilentlyContinue | Out-Null
         }
@@ -228,25 +225,32 @@ function Copy-ModsFile ($CopyFile, $CopyTo) {
 
 function Edit-ModsFile ($File, $FindText, $ReplaceText) {
     if (Test-Path "$File") {
-        ((Get-Content -path $File -Raw) -replace "$FindText","$ReplaceText") | Set-Content -Path $File -Force -ErrorAction SilentlyContinue | Out-Null
+        ((Get-Content -path $File -Raw) -replace "$FindText", "$ReplaceText") | Set-Content -Path $File -Force -ErrorAction SilentlyContinue | Out-Null
     }
     Return
 }
 
 function Grant-ModsPath ($GrantPath) {
-    foreach ($path in $GrantPath)
-    {
+    foreach ($path in $GrantPath) {
         if (Test-Path "$path") {
             $NewAcl = Get-Acl -Path $path
             $identity = New-Object System.Security.Principal.SecurityIdentifier S-1-5-11
             if ((Get-Item $path) -is [System.IO.DirectoryInfo]) {
-                $fileSystemAccessRuleArgumentList = $identity, 'Modify', 'ContainerInherit, ObjectInherit', 'InheritOnly', 'Allow'
+                $fileSystemAccessRuleArgumentList = $identity, 'Modify', 'ContainerInherit, ObjectInherit', 'None', 'Allow'
             }
             else {
                 $fileSystemAccessRuleArgumentList = $identity, 'Modify', 'Allow'
             }
             $fileSystemAccessRule = New-Object -TypeName System.Security.AccessControl.FileSystemAccessRule -ArgumentList $fileSystemAccessRuleArgumentList
             $NewAcl.SetAccessRule($fileSystemAccessRule)
+
+            # Grant delete permissions to subfolders and files
+            $inheritanceFlag = [System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [System.Security.AccessControl.InheritanceFlags]::ObjectInherit
+            $propagationFlag = [System.Security.AccessControl.PropagationFlags]::InheritOnly
+            $deleteAccessRule = New-Object -TypeName System.Security.AccessControl.FileSystemAccessRule -ArgumentList $identity, 'Delete', $inheritanceFlag, $propagationFlag, 'Allow'
+            $NewAcl.AddAccessRule($deleteAccessRule)
+
+
             Set-Acl -Path $path -AclObject $NewAcl
         }
     }
