@@ -1,4 +1,4 @@
-# Winget-Install
+# Winget-Install (Will be part of WAU - Work in progress)
 Powershell scripts to install Winget Packages with SCCM/Intune (or similar) or even as standalone in system context (Inspired by [o-l-a-v](https://github.com/o-l-a-v) work)
 
 ## Install
