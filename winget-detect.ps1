@@ -39,14 +39,8 @@ if ($output -match "-----") {
     $outputArray = $output -split ' '
     $outputArrayId = $outputArray[-2]
 
-    # This regex pattern '^.+\..+$' matches a string
-    # that has at least one character before and after a dot (.),
-    # ensuring it has a dot in the middle.
-    # 
-    # Example (the standard WinGet format for Application IDs):
-    # Notepad++.Notepad++
-
-    if ($outputArrayId -match '^.+\..+$') {
+    # Checks if the value of $outputArrayId is case-sensitively equal to the value of $AppToDetect
+    if ($outputArrayId -ceq $AppToDetect) {
         return "Installed!"
     }
 }
