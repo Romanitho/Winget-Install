@@ -1,53 +1,52 @@
-#Change app to detect [Application ID]
+# Change app to detect [Application ID] (case sensitive!)
 $AppToDetect = "Notepad++.Notepad++"
 
 
 <# FUNCTIONS #>
 
-Function Get-WingetCmd {
+Function Get-WinGetCmd {
 
-    $WingetCmd = $null
+    $WinGetCmd = $null
 
-    #Get WinGet Path
+    # Get WinGet Path
     try {
-        #Get Admin Context Winget Location
-        $WingetInfo = (Get-Item "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*_8wekyb3d8bbwe\winget.exe").VersionInfo | Sort-Object -Property FileVersionRaw
-        #If multiple versions, pick most recent one
-        $WingetCmd = $WingetInfo[-1].FileName
+        # Get System Context WinGet Location
+        $WinGetInfo = (Get-Item "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*_8wekyb3d8bbwe\winget.exe").VersionInfo | Sort-Object -Property FileVersionRaw
+        # If multiple versions, pick most recent one
+        $WinGetCmd = $WinGetInfo[-1].FileName
     }
     catch {
-        #Get User context Winget Location
+        # Get User context WinGet Location
         if (Test-Path "$env:LocalAppData\Microsoft\WindowsApps\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\winget.exe") {
-            $WingetCmd = "$env:LocalAppData\Microsoft\WindowsApps\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\winget.exe"
+            $WinGetCmd = "$env:LocalAppData\Microsoft\WindowsApps\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\winget.exe"
         }
     }
 
-    return $WingetCmd
+    return $WinGetCmd
 }
 
 <# MAIN #>
 
-#Get WinGet Location Function
-$winget = Get-WingetCmd
+# Get WinGet Location Function
+$WinGet = Get-WinGetCmd
 
-#Set json export file
-$JsonFile = "$env:TEMP\InstalledApps.json"
+# Check if the app is installed
+$output = & $WinGet list --Id $AppToDetect -e --accept-source-agreements -s winget
 
-#Get installed apps and version in json file
-& $Winget export -o $JsonFile --accept-source-agreements | Out-Null
+# Check if the output contains "-----" (which means WinGet got a positive response with a header)
+if ($output -match "-----") {
+    # Extract the second-to-last word from the output (which is the Application ID)
+    $outputArray = $output -split ' '
+    $outputArrayId = $outputArray[-2]
 
-#Get json content
-$Json = Get-Content $JsonFile -Raw | ConvertFrom-Json
+    # This regex pattern '^.+\..+$' matches a string
+    # that has at least one character before and after a dot (.),
+    # ensuring it has a dot in the middle.
+    # 
+    # Example (the standard WinGet format for Application IDs):
+    # Notepad++.Notepad++
 
-#Get apps and version in hashtable
-$Packages = $Json.Sources.Packages
-
-#Remove json file
-Remove-Item $JsonFile -Force
-
-# Search for specific app and version
-$Apps = $Packages | Where-Object { $_.PackageIdentifier -eq $AppToDetect }
-
-if ($Apps) {
-    return "Installed!"
+    if ($outputArrayId -match '^.+\..+$') {
+        return "Installed!"
+    }
 }
